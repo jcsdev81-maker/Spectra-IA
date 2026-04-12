@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#06080c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>SPECTRA • Agente de Sinais IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#06080c;--bg2:#0c1018;--bg3:#131824;--bg4:#1a2030;
+  --brd:#1c2436;--brd2:#283048;
+  --acc:#00F0FF;--acc2:#00C8FF;--accd:#00F0FF18;--accg:#00F0FF40;
+  --grn:#00E676;--grnd:#00E67620;--grng:#00E67640;
+  --red:#FF4757;--redd:#FF475720;
+  --amb:#FFC312;--ambd:#FFC31220;
+  --t1:#e8ecf4;--t2:#7c8aa0;--t3:#3e4a60;
+  --grd:linear-gradient(135deg,#00F0FF,#00E676);
+  --f1:'Outfit',sans-serif;--f2:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--f1);font-size:16px;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+button{font-family:var(--f1);cursor:pointer}
+input{font-family:var(--f2)}
+
+/* ═══ LOGIN ═══ */
+.auth{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.auth-glow{position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:400px;height:400px;background:radial-gradient(circle,#00F0FF08 0%,transparent 70%);pointer-events:none}
+.auth-box{position:relative;z-index:1;width:100%;max-width:360px}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo h1{font-size:32px;font-weight:800;letter-spacing:6px;background:var(--grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-logo p{font-family:var(--f2);font-size:10px;color:var(--t3);letter-spacing:3px;margin-top:4px}
+.auth-card{background:var(--bg2);border:1px solid var(--brd);border-radius:16px;padding:28px 24px}
+.auth-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--bg);border-radius:8px;padding:3px}
+.auth-tab{flex:1;padding:10px;border:none;border-radius:6px;background:transparent;color:var(--t3);font-size:13px;font-weight:600;letter-spacing:.5px;transition:.2s}
+.auth-tab.on{background:var(--bg3);color:var(--acc)}
+.auth-input{width:100%;background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:12px 16px;color:var(--t1);font-size:14px;outline:none;margin-bottom:10px;transition:.2s}
+.auth-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--accd)}
+.auth-btn{width:100%;padding:14px;border:none;border-radius:8px;background:var(--grd);color:#000;font-size:14px;font-weight:700;letter-spacing:1px;transition:.2s}
+.auth-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.auth-btn:active{transform:translateY(0)}
+.auth-msg{font-family:var(--f2);font-size:11px;text-align:center;margin-top:12px;min-height:16px}
+
+/* ═══ EXPIRED ═══ */
+.exp{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:flex-start;z-index:10000;padding:40px 20px;overflow-y:auto}
+.exp.on{display:flex}
+.exp-icon{font-size:48px;margin-bottom:12px}
+.exp-title{font-size:22px;font-weight:800;color:var(--red);letter-spacing:2px;margin-bottom:10px}
+.exp-desc{font-family:var(--f2);font-size:12px;color:var(--t2);text-align:center;max-width:340px;line-height:1.7;margin-bottom:6px}
+.exp-info{font-family:var(--f2);font-size:10px;color:var(--t3);margin-bottom:20px}
+.exp-plans{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:18px;width:100%;max-width:340px;margin-bottom:14px}
+.exp-plan{display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;margin-bottom:6px}
+.exp-plan:last-child{margin:0}
+.exp-plan span:first-child{font-family:var(--f2);font-size:12px;color:var(--t2)}
+.exp-plan span:last-child{font-family:var(--f2);font-size:14px;font-weight:700;color:var(--grn)}
+.exp-pix{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;width:100%;max-width:340px;margin-bottom:14px;text-align:center}
+.exp-pix-key{font-family:var(--f2);font-size:15px;color:var(--t1);background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;margin:8px 0;cursor:pointer;user-select:all}
+.exp-pix-key:active{border-color:var(--grn)}
+.exp-btns{display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px}
+.exp-btns a,.exp-btns button{display:block;width:100%;padding:13px;border-radius:8px;text-align:center;text-decoration:none;font-size:13px;font-weight:600}
+
+/* ═══ SHELL ═══ */
+.shell{display:none;height:100vh;height:100dvh;flex-direction:column}
+.shell.on{display:flex}
+
+/* NAV BAR (bottom) */
+.nav{display:flex;background:var(--bg2);border-top:1px solid var(--brd);padding:6px 0 max(6px,env(safe-area-inset-bottom))}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border:none;background:none;color:var(--t3);font-size:9px;font-weight:500;letter-spacing:.5px;transition:.2s}
+.nav-item.on{color:var(--acc)}
+.nav-item.on .nav-icon{color:var(--acc);filter:drop-shadow(0 0 6px var(--accd))}
+.nav-icon{font-size:20px;line-height:1}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--brd)}
+.topbar-l{display:flex;align-items:center;gap:10px}
+.topbar-l h1{font-size:16px;font-weight:800;letter-spacing:3px;background:var(--grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar-l span{font-family:var(--f2);font-size:8px;color:var(--t3);letter-spacing:1px;padding:2px 6px;background:var(--accd);border:1px solid var(--acc);border-radius:3px;color:var(--acc)}
+.topbar-r{font-family:var(--f2);font-size:10px;color:var(--t2)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.page{display:none;animation:fadeUp .3s ease}.page.on{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:14px;margin-bottom:10px;transition:border-color .2s}
+.card:hover{border-color:var(--brd2)}
+.label{font-family:var(--f2);font-size:9px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.val{font-size:24px;font-weight:700;line-height:1}
+.sub{font-family:var(--f2);font-size:10px;color:var(--t2);margin-top:3px}
+
+/* STAT GRID */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+
+/* SIGNAL CARD */
+.sig{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;margin-bottom:10px;position:relative;overflow:hidden}
+.sig::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:0 2px 2px 0}
+.sig.long::before{background:var(--grn)}.sig.short::before{background:var(--red)}.sig.wait::before{background:var(--amb)}
+.sig-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.sig-pair{font-size:18px;font-weight:700;letter-spacing:1px}
+.sig-dir{font-family:var(--f2);font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;letter-spacing:1px}
+.sig-dir.long{background:var(--grnd);color:var(--grn);border:1px solid var(--grng)}
+.sig-dir.short{background:var(--redd);color:var(--red);border:1px solid var(--red)}
+.sig-dir.wait{background:var(--ambd);color:var(--amb);border:1px solid var(--amb)}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.sig-cell{background:var(--bg);border-radius:6px;padding:8px;text-align:center}
+.sig-cell-label{font-family:var(--f2);font-size:8px;color:var(--t3);letter-spacing:1px}
+.sig-cell-val{font-family:var(--f2);font-size:13px;font-weight:600;margin-top:2px}
+.sig-meta{display:flex;justify-content:space-between;align-items:center;font-family:var(--f2);font-size:10px;color:var(--t3)}
+.sig-stars{color:var(--amb);letter-spacing:2px}
+.sig-rr{font-weight:600;color:var(--t1)}
+.sig-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.pill{font-family:var(--f2);font-size:8px;padding:3px 7px;border-radius:3px;letter-spacing:.5px}
+.pill-g{background:var(--grnd);color:var(--grn)}.pill-r{background:var(--redd);color:var(--red)}.pill-n{background:var(--bg);color:var(--t3)}
+
+/* ALERT ITEM */
+.al{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;margin-bottom:6px}
+.al-left{display:flex;align-items:center;gap:10px}
+.al-sym{font-size:15px;font-weight:600}
+.al-price{font-family:var(--f2);font-size:11px;color:var(--t2)}
+.al-toggle{width:44px;height:24px;border-radius:12px;border:none;background:var(--bg);position:relative;cursor:pointer;transition:.2s}
+.al-toggle.on{background:var(--grnd);border:1px solid var(--grn)}
+.al-toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--t3);transition:.2s}
+.al-toggle.on::after{left:23px;background:var(--grn)}
+
+/* SECTION */
+.sec{font-family:var(--f2);font-size:9px;color:var(--t3);letter-spacing:2px;margin:18px 0 10px;display:flex;align-items:center;gap:8px}
+.sec::after{content:'';flex:1;height:1px;background:var(--brd)}
+
+/* ACCOUNT */
+.acc-card{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;margin-bottom:10px}
+.acc-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--brd)}
+.acc-row:last-child{border:none}
+.acc-row span:first-child{font-family:var(--f2);font-size:11px;color:var(--t3)}
+.acc-row span:last-child{font-size:13px;font-weight:500}
+.badge{display:inline-block;font-family:var(--f2);font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px}
+.badge-trial{background:var(--accd);color:var(--acc);border:1px solid var(--acc)}
+.badge-prem{background:var(--grnd);color:var(--grn);border:1px solid var(--grn)}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:var(--t3)}
+.empty-icon{font-size:40px;margin-bottom:10px;opacity:.4}
+.empty-text{font-size:13px;line-height:1.6}
+
+/* BTN */
+.btn{padding:12px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;letter-spacing:.5px;transition:.2s}
+.btn-acc{background:var(--grd);color:#000}
+.btn-out{background:transparent;border:1px solid var(--brd);color:var(--t3)}
+.btn-out:hover{border-color:var(--red);color:var(--red)}
+.btn-scan{width:100%;padding:14px;background:var(--accd);border:1px solid var(--acc);border-radius:10px;color:var(--acc);font-family:var(--f2);font-size:12px;font-weight:600;letter-spacing:1px;margin-bottom:14px}
+.btn-scan:hover{background:var(--acc);color:#000}
+.btn-scan:disabled{opacity:.4;cursor:not-allowed}
+
+/* LOADING */
+.ld{display:inline-block;width:16px;height:16px;border:2px solid var(--brd);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(60px);padding:10px 20px;border-radius:8px;font-family:var(--f2);font-size:12px;z-index:300;opacity:0;transition:.3s}
+.toast.on{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.ok{background:var(--grn);color:#000}.toast.err{background:var(--red);color:#fff}.toast.inf{background:var(--acc);color:#000}
+
+@media(max-width:380px){.sig-grid{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="auth" id="authScr">
+  <div class="auth-glow"></div>
+  <div class="auth-box">
+    <div class="auth-logo"><h1>SPECTRA</h1><p>AGENTE DE SINAIS IA</p></div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab on" onclick="switchAuth('login')">ENTRAR</button>
+        <button class="auth-tab" onclick="switchAuth('signup')">CRIAR CONTA</button>
+      </div>
+      <div id="authLogin">
+        <input class="auth-input" type="email" id="logEmail" placeholder="E-mail">
+        <input class="auth-input" type="password" id="logPass" placeholder="Senha">
+        <button class="auth-btn" id="btnLog" onclick="doLogin()">ENTRAR</button>
+      </div>
+      <div id="authSignup" style="display:none">
+        <input class="auth-input" type="email" id="sigEmail" placeholder="E-mail">
+        <input class="auth-input" type="password" id="sigPass" placeholder="Senha (mín. 6)">
+        <input class="auth-input" type="password" id="sigPass2" placeholder="Confirmar senha">
+        <button class="auth-btn" id="btnSig" onclick="doSignup()">CRIAR CONTA GRÁTIS</button>
+      </div>
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-family:var(--f2);font-size:9px;color:var(--t3)">3 dias grátis • Sem cartão • Cancele quando quiser</div>
+  </div>
+</div>
+
+<!-- EXPIRED -->
+<div class="exp" id="expScr">
+  <div class="exp-icon">⏰</div>
+  <div class="exp-title">PERÍODO ENCERRADO</div>
+  <div class="exp-desc">Seu teste gratuito de 3 dias terminou. Assine para continuar recebendo sinais com IA e confluência dos 7 pilares.</div>
+  <div class="exp-info" id="expInfo"></div>
+  <div class="exp-plans">
+    <div style="font-family:var(--f2);font-size:9px;color:var(--acc);letter-spacing:2px;text-align:center;margin-bottom:10px">PLANOS</div>
+    <div class="exp-plan"><span>Mensal</span><span>R$ 97</span></div>
+    <div class="exp-plan" style="border-color:var(--amb)"><span style="color:var(--amb)">Trimestral</span><span style="color:var(--amb)">R$ 247</span></div>
+    <div class="exp-plan" style="border-color:var(--grn)"><span style="color:var(--grn)">Anual (2 meses grátis)</span><span>R$ 797</span></div>
+  </div>
+  <div class="exp-pix">
+    <div style="font-family:var(--f2);font-size:9px;color:var(--acc);letter-spacing:2px;margin-bottom:8px">PAGAR VIA PIX</div>
+    <div class="exp-pix-key" onclick="navigator.clipboard.writeText('62991704188');toast('Chave copiada!','ok')">62991704188</div>
+    <div style="font-family:var(--f2);font-size:10px;color:var(--t3)">Jamis Costa da Silva</div>
+    <div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:4px">Toque pra copiar • Envie comprovante pelo WhatsApp</div>
+  </div>
+  <div class="exp-btns">
+    <a href="https://wa.me/5562991704188?text=Ol%C3%A1!%20Quero%20assinar%20o%20SPECTRA.%20Segue%20comprovante%20PIX." target="_blank" style="background:var(--grn);color:#000;font-weight:700">💬 ASSINAR VIA WHATSAPP</a>
+    <a href="https://wa.me/5562991704188?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20o%20SPECTRA." target="_blank" style="background:transparent;border:1px solid var(--brd);color:var(--t2)">⚠️ SUPORTE</a>
+    <button onclick="doLogout()" style="background:transparent;border:1px solid var(--brd);color:var(--t3);width:100%">SAIR</button>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell" id="shell">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-l"><h1>SPECTRA</h1><span id="planBadge">TRIAL</span></div>
+    <div class="topbar-r" id="topInfo">—</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="mainContent">
+
+    <!-- PAGE: DASHBOARD -->
+    <div class="page on" id="pg-dash">
+      <div class="stats">
+        <div class="card"><div class="label">SINAIS HOJE</div><div class="val" id="dSinais">0</div><div class="sub">gerados pela IA</div></div>
+        <div class="card"><div class="label">WIN RATE</div><div class="val" id="dWin" style="color:var(--grn)">—</div><div class="sub">últimos 30 dias</div></div>
+        <div class="card"><div class="label">ATIVOS MONITORADOS</div><div class="val" id="dAtivos">0</div><div class="sub">alertas ativos</div></div>
+        <div class="card"><div class="label">CONFLUÊNCIA MÉDIA</div><div class="val" id="dConf" style="color:var(--amb)">—</div><div class="sub">dos 7 pilares</div></div>
+      </div>
+
+      <div class="sec">ÚLTIMO SINAL</div>
+      <div id="dashLastSignal">
+        <div class="empty"><div class="empty-icon">📡</div><div class="empty-text">Nenhum sinal gerado ainda.<br>Vá em <strong>Sinais</strong> e escaneie o mercado.</div></div>
+      </div>
+
+      <div class="sec">MERCADO</div>
+      <div class="stats" id="dashMarket">
+        <div class="card"><div class="label">BTC</div><div class="val" style="font-size:16px" id="dmBTC">—</div><div class="sub" id="dmBTCc">—</div></div>
+        <div class="card"><div class="label">ETH</div><div class="val" style="font-size:16px" id="dmETH">—</div><div class="sub" id="dmETHc">—</div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: SIGNALS -->
+    <div class="page" id="pg-sig">
+      <button class="btn-scan" id="btnScan" onclick="scanMercado()">⚡ ESCANEAR MERCADO</button>
+      <div id="scanStatus" style="display:none;text-align:center;padding:12px;font-family:var(--f2);font-size:11px;color:var(--acc);margin-bottom:10px"><div class="ld" style="margin-right:8px;vertical-align:middle"></div><span id="scanTxt">Analisando...</span></div>
+
+      <div class="sec">SINAIS ATIVOS</div>
+      <div id="sigList">
+        <div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Clique em "Escanear Mercado" para a IA analisar os ativos monitorados.</div></div>
+      </div>
+    </div>
+
+    <!-- PAGE: ALERTS -->
+    <div class="page" id="pg-alert">
+      <div style="margin-bottom:12px">
+        <input class="auth-input" type="text" id="searchPair" placeholder="🔍 Buscar par..." oninput="filterPairs()" style="margin:0">
+      </div>
+      <div class="sec">PARES MONITORADOS</div>
+      <div id="alertList"></div>
+    </div>
+
+    <!-- PAGE: ACCOUNT -->
+    <div class="page" id="pg-acc">
+      <div class="acc-card">
+        <div style="text-align:center;margin-bottom:12px">
+          <div style="width:56px;height:56px;border-radius:50%;background:var(--grd);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:22px;font-weight:800;color:#000">S</div>
+          <div style="font-size:15px;font-weight:600" id="accEmail">—</div>
+          <div id="accBadge" style="margin-top:6px"></div>
+        </div>
+        <div class="acc-row"><span>PLANO</span><span id="accPlan">—</span></div>
+        <div class="acc-row"><span>DIAS RESTANTES</span><span id="accDays">—</span></div>
+        <div class="acc-row"><span>CADASTRO</span><span id="accDate">—</span></div>
+      </div>
+
+      <div class="sec">NOTIFICAÇÕES</div>
+      <div class="acc-card">
+        <div class="acc-row">
+          <span>Telegram</span>
+          <span style="font-family:var(--f2);font-size:11px;color:var(--t3)">Em breve</span>
+        </div>
+        <div class="acc-row">
+          <span>Email</span>
+          <span style="font-family:var(--f2);font-size:11px;color:var(--t3)">Em breve</span>
+        </div>
+      </div>
+
+      <div class="sec">SUPORTE</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <a href="https://wa.me/5562991704188?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20o%20SPECTRA." target="_blank" class="btn btn-acc" style="display:block;text-align:center;text-decoration:none">💬 WhatsApp</a>
+        <button class="btn btn-out" onclick="doLogout()" style="width:100%">⏻ SAIR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav">
+    <button class="nav-item on" onclick="goPage('dash',this)"><span class="nav-icon">📊</span>Dashboard</button>
+    <button class="nav-item" onclick="goPage('sig',this)"><span class="nav-icon">⚡</span>Sinais</button>
+    <button class="nav-item" onclick="goPage('alert',this)"><span class="nav-icon">🔔</span>Alertas</button>
+    <button class="nav-item" onclick="goPage('acc',this)"><span class="nav-icon">👤</span>Conta</button>
+  </nav>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ SUPABASE ═══
+var SB_URL='https://arstesmktmfbibglanfn.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyc3Rlc21rdG1mYmliZ2xhbmZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzYyMDcsImV4cCI6MjA5MTM1MjIwN30.PLXnXmHQ2T-kz8tlG1X9yepwa5kw5t6J2Xfvtw6IdE4';
+var sb=window.supabase.createClient(SB_URL,SB_KEY);
+var curUser=null,curProfile=null;
+
+// ═══ PROXIES (chave Gemini protegida) ═══
+var PROXIES=['https://powerflex-api-proxy.jamiscosta81.workers.dev/especulador','https://peak-turbomaster-proxy.jamiscosta81.workers.dev/especulador'];
+var pIdx=0;
+function getProxy(){var p=PROXIES[pIdx];pIdx=(pIdx+1)%PROXIES.length;return p;}
+
+// ═══ AUTH ═══
+function switchAuth(t){
+  document.querySelectorAll('.auth-tab').forEach(function(b){b.classList.remove('on');});
+  event.target.classList.add('on');
+  document.getElementById('authLogin').style.display=t==='login'?'block':'none';
+  document.getElementById('authSignup').style.display=t==='signup'?'block':'none';
+  document.getElementById('authMsg').textContent='';
+}
+function aMsg(m,err){var e=document.getElementById('authMsg');e.textContent=m;e.style.color=err?'var(--red)':'var(--grn)';}
+
+async function doLogin(){
+  var email=document.getElementById('logEmail').value.trim(),pass=document.getElementById('logPass').value;
+  if(!email||!pass){aMsg('Preencha os campos',true);return;}
+  document.getElementById('btnLog').textContent='Entrando...';
+  var r=await sb.auth.signInWithPassword({email:email,password:pass});
+  document.getElementById('btnLog').textContent='ENTRAR';
+  if(r.error){aMsg(r.error.message==='Invalid login credentials'?'E-mail ou senha incorretos':r.error.message,true);return;}
+  curUser=r.data.user;checkTrial();
+}
+async function doSignup(){
+  var email=document.getElementById('sigEmail').value.trim(),pass=document.getElementById('sigPass').value,pass2=document.getElementById('sigPass2').value;
+  if(!email||!pass||!pass2){aMsg('Preencha todos',true);return;}
+  if(pass.length<6){aMsg('Senha mínimo 6 caracteres',true);return;}
+  if(pass!==pass2){aMsg('Senhas não coincidem',true);return;}
+  document.getElementById('btnSig').textContent='Criando...';
+  var r=await sb.auth.signUp({email:email,password:pass});
+  document.getElementById('btnSig').textContent='CRIAR CONTA GRÁTIS';
+  if(r.error){aMsg(r.error.message,true);return;}
+  aMsg('Conta criada! Entrando...',false);
+  var r2=await sb.auth.signInWithPassword({email:email,password:pass});
+  if(r2.error){aMsg('Conta criada. Faça login.',false);switchAuth('login');return;}
+  curUser=r2.data.user;checkTrial();
+}
+async function doLogout(){await sb.auth.signOut();curUser=null;curProfile=null;showAuth();}
+
+async function checkTrial(){
+  if(!curUser){showAuth();return;}
+  var r=await sb.from('profiles').select('*').eq('id',curUser.id).single();
+  if(r.error){await new Promise(function(ok){setTimeout(ok,1500);});r=await sb.from('profiles').select('*').eq('id',curUser.id).single();}
+  if(r.error||!r.data){aMsg('Erro ao carregar perfil',true);return;}
+  curProfile=r.data;
+  if(curProfile.subscription_status==='premium'){showApp();return;}
+  var start=new Date(curProfile.trial_start);
+  var end=new Date(start.getTime()+curProfile.trial_days*86400000);
+  if(new Date()>end){sb.from('profiles').update({subscription_status:'expired'}).eq('id',curUser.id);showExpired(end);return;}
+  showApp();
+}
+
+function showAuth(){document.getElementById('authScr').style.display='flex';document.getElementById('shell').classList.remove('on');document.getElementById('expScr').classList.remove('on');}
+function showExpired(end){document.getElementById('authScr').style.display='none';document.getElementById('shell').classList.remove('on');document.getElementById('expScr').classList.add('on');document.getElementById('expInfo').textContent='Trial encerrou em '+end.toLocaleDateString('pt-BR');}
+function showApp(){
+  document.getElementById('authScr').style.display='none';document.getElementById('expScr').classList.remove('on');document.getElementById('shell').classList.add('on');
+  if(curProfile){
+    var isPrem=curProfile.subscription_status==='premium';
+    document.getElementById('planBadge').textContent=isPrem?'PREMIUM':'TRIAL';
+    document.getElementById('planBadge').style.background=isPrem?'var(--grnd)':'var(--accd)';
+    document.getElementById('planBadge').style.borderColor=isPrem?'var(--grn)':'var(--acc)';
+    document.getElementById('planBadge').style.color=isPrem?'var(--grn)':'var(--acc)';
+    if(!isPrem){var d=Math.ceil((new Date(new Date(curProfile.trial_start).getTime()+curProfile.trial_days*86400000).getTime()-Date.now())/86400000);document.getElementById('topInfo').textContent=d+'d restantes';}
+    else document.getElementById('topInfo').textContent='∞';
+    // Account page
+    document.getElementById('accEmail').textContent=curProfile.email;
+    document.getElementById('accBadge').innerHTML=isPrem?'<span class="badge badge-prem">★ PREMIUM</span>':'<span class="badge badge-trial">TRIAL</span>';
+    document.getElementById('accPlan').textContent=isPrem?'Premium':'Trial (3 dias)';
+    document.getElementById('accDays').textContent=isPrem?'Ilimitado':Math.max(0,Math.ceil((new Date(new Date(curProfile.trial_start).getTime()+curProfile.trial_days*86400000).getTime()-Date.now())/86400000))+' dias';
+    document.getElementById('accDate').textContent=new Date(curProfile.created_at).toLocaleDateString('pt-BR');
+  }
+  loadAlertPairs();fetchDashMarket();
+}
+
+// Init
+(async function(){try{var s=await sb.auth.getSession();if(s.data.session){curUser=s.data.session.user;checkTrial();}}catch(e){}
+  sb.auth.onAuthStateChange(function(ev,s){if(s){curUser=s.user;}else{curUser=null;showAuth();}});
+})();
+
+// ═══ NAVIGATION ═══
+function goPage(id,btn){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('on');});
+  document.getElementById('pg-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ═══ DASHBOARD MARKET ═══
+async function fetchDashMarket(){
+  try{
+    var r=await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT"]');
+    var d=await r.json();
+    d.forEach(function(t){
+      var sym=t.symbol==='BTCUSDT'?'BTC':'ETH';
+      var p=parseFloat(t.lastPrice);var c=parseFloat(t.priceChangePercent);
+      document.getElementById('dm'+sym).textContent='$'+p.toLocaleString('en-US',{maximumFractionDigits:0});
+      var el=document.getElementById('dm'+sym+'c');
+      el.textContent=(c>=0?'▲':'▼')+Math.abs(c).toFixed(1)+'%';
+      el.style.color=c>=0?'var(--grn)':'var(--red)';
+    });
+  }catch(e){}
+}
+setInterval(fetchDashMarket,30000);
+
+// ═══ ALERT PAIRS ═══
+var TOP_PAIRS=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT','SUIUSDT','DOTUSDT','LINKUSDT','NEARUSDT','APTUSDT','PEPEUSDT','TRXUSDT','LTCUSDT','UNIUSDT','ATOMUSDT','SHIBUSDT','EGLDUSDT','MATICUSDT','ARBUSDT','OPUSDT','FETUSDT','RENDERUSDT','INJUSDT','TIAUSDT','WIFUSDT','JUPUSDT','ONDOUSDT'];
+var monitoredPairs=JSON.parse(localStorage.getItem('spectra_monitored')||'["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT"]');
+
+function loadAlertPairs(){renderAlerts(TOP_PAIRS);}
+function renderAlerts(pairs){
+  var html='';
+  pairs.forEach(function(p){
+    var name=p.replace('USDT','');
+    var isOn=monitoredPairs.indexOf(p)>-1;
+    html+='<div class="al"><div class="al-left"><span class="al-sym">'+name+'</span><span class="al-price" id="ap-'+p+'">—</span></div><button class="al-toggle'+(isOn?' on':'')+'" onclick="togglePair(\''+p+'\',this)"></button></div>';
+  });
+  document.getElementById('alertList').innerHTML=html;
+  document.getElementById('dAtivos').textContent=monitoredPairs.length;
+  fetchAlertPrices(pairs);
+}
+async function fetchAlertPrices(pairs){
+  try{
+    var r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=['+pairs.map(function(p){return'"'+p+'"'}).join(',')+']');
+    var d=await r.json();
+    d.forEach(function(t){var el=document.getElementById('ap-'+t.symbol);if(el){var p=parseFloat(t.price);el.textContent='$'+(p<1?p.toFixed(6):p<100?p.toFixed(2):p.toLocaleString('en-US',{maximumFractionDigits:0}));}});
+  }catch(e){}
+}
+function togglePair(pair,btn){
+  var idx=monitoredPairs.indexOf(pair);
+  if(idx>-1)monitoredPairs.splice(idx,1);else monitoredPairs.push(pair);
+  btn.classList.toggle('on');
+  localStorage.setItem('spectra_monitored',JSON.stringify(monitoredPairs));
+  document.getElementById('dAtivos').textContent=monitoredPairs.length;
+}
+function filterPairs(){
+  var q=document.getElementById('searchPair').value.toUpperCase();
+  var filtered=TOP_PAIRS.filter(function(p){return p.indexOf(q)>-1;});
+  renderAlerts(filtered);
+}
+
+// ═══ SCAN MERCADO (SPEC MIND via Workers) ═══
+var signals=JSON.parse(localStorage.getItem('spectra_signals')||'[]');
+var isScanning=false;
+
+var SYS_SIGNAL='Você é o SPECTRA, agente de sinais cripto com IA. Analise o ativo com dados reais e retorne SOMENTE JSON puro.\n\nFormato obrigatório:\n{"par":"BTCUSDT","direcao":"LONG|SHORT|AGUARDAR","probabilidade":85,"confluencia":5,"estrelas":"★★★★★","entrada":0,"stop":0,"tp1":0,"tp2":0,"tp3":0,"rr":"4.2:1","pilares":{"elliott":"▲ Onda 3","fibonacci":"▲ Golden Zone","macd":"▲ Bullish","dow":"▲ Alta","wyckoff":"▲ Spring","gann":"◆ Neutro","price_action":"▲ Pin Bar"},"resumo":"Frase curta e direta do veredicto."}\n\nREGRAS: Sem texto fora do JSON. Números reais dos dados fornecidos. R:R mínimo 3:1 ou AGUARDAR. MACD 12/72 diário é GATE obrigatório.';
+
+function ema(d,p){var k=2/(p+1),r=[d[0]];for(var i=1;i<d.length;i++)r.push(d[i]*k+r[i-1]*(1-k));return r;}
+function swings(h,l,lb){var sh=[],sl=[];for(var i=lb;i<h.length-lb;i++){var ih=true,il=true;for(var j=1;j<=lb;j++){if(h[i]<=h[i-j]||h[i]<=h[i+j])ih=false;if(l[i]>=l[i-j]||l[i]>=l[i+j])il=false;}if(ih)sh.push(h[i]);if(il)sl.push(l[i]);}return{h:sh,l:sl};}
+
+async function getMktData(sym){
+  var kl=await(await fetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval=4h&limit=500')).json();
+  var kd=await(await fetch('https://api.binance.com/api/v3/klines?symbol='+sym+'&interval=1d&limit=200')).json();
+  if(!Array.isArray(kl)||kl.length<50)return null;
+  if(!Array.isArray(kd))kd=kl;
+  var c=kl.map(function(k){return+k[4]}),h=kl.map(function(k){return+k[2]}),l=kl.map(function(k){return+k[3]}),o=kl.map(function(k){return+k[1]});
+  var cd=kd.map(function(k){return+k[4]});
+  var p=c[c.length-1],dc=p<1?6:p<100?4:2;
+  var e12d=ema(cd,12),e72d=ema(cd,Math.min(72,cd.length-1));
+  var mg=e12d[e12d.length-1]-e72d[e72d.length-1];
+  var e12=ema(c,12),e72=ema(c,Math.min(72,c.length-1));
+  var sw=swings(h,l,5),rh=sw.h.slice(-3),rl=sw.l.slice(-3);
+  var sH=rh.length?rh[rh.length-1]:Math.max.apply(null,h.slice(-50));
+  var sL=rl.length?rl[rl.length-1]:Math.min.apply(null,l.slice(-50));
+  var rng=sH-sL;if(rng===0)rng=sH*0.1;
+  var f618=sH-rng*0.618,f786=sH-rng*0.786;
+  var bd=Math.abs(c[c.length-1]-o[o.length-1]),tt=h[h.length-1]-l[l.length-1];
+  var cn='NEUTRO';if(tt>0){if(bd>tt*0.7)cn=c[c.length-1]>o[o.length-1]?'ELEFANTE BULL':'ELEFANTE BEAR';else if((Math.min(o[o.length-1],c[c.length-1])-l[l.length-1])>bd*2)cn='MARTELO';}
+  return sym+' 4H | Preço:'+p.toFixed(dc)+' | MACD Diário:'+(mg>0?'BULL':'BEAR')+' EMA12='+e12d[e12d.length-1].toFixed(dc)+' EMA72='+e72d[e72d.length-1].toFixed(dc)+' | MACD 4H: EMA12='+e12[e12.length-1].toFixed(dc)+' EMA72='+e72[e72.length-1].toFixed(dc)+' | Topos:'+rh.map(function(x){return x.toFixed(dc)}).join(',')+' Fundos:'+rl.map(function(x){return x.toFixed(dc)}).join(',')+' | Fibo('+sH.toFixed(dc)+'→'+sL.toFixed(dc)+'): 0.618='+f618.toFixed(dc)+' 0.786='+f786.toFixed(dc)+' GZ:'+(p<=f618&&p>=f786?'SIM':'NÃO')+' | Candle:'+cn;
+}
+
+async function scanMercado(){
+  if(isScanning)return;isScanning=true;
+  var btn=document.getElementById('btnScan');btn.disabled=true;btn.textContent='ESCANEANDO...';
+  document.getElementById('scanStatus').style.display='block';
+  var newSignals=[];
+  for(var i=0;i<monitoredPairs.length;i++){
+    var pair=monitoredPairs[i];
+    document.getElementById('scanTxt').textContent='Analisando '+pair.replace('USDT','')+'... ('+(i+1)+'/'+monitoredPairs.length+')';
+    try{
+      var mkt=await getMktData(pair);
+      if(!mkt)continue;
+      var res=await fetch(getProxy(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:SYS_SIGNAL,messages:[{role:'user',parts:[{text:mkt}]}],max_tokens:2000})});
+      if(!res.ok)continue;
+      var data=await res.json();
+      var text=(data.candidates&&data.candidates[0])?data.candidates[0].content.parts[0].text:((data.content&&data.content[0])?data.content[0].text:'');
+      if(!text)continue;
+      var json=exJSON(text);
+      if(json&&json.par){json.time=new Date().toISOString();json.status='aberto';newSignals.push(json);}
+    }catch(e){console.log('Scan error:',pair,e.message);}
+    // Cooldown entre chamadas
+    if(i<monitoredPairs.length-1)await new Promise(function(ok){setTimeout(ok,3000);});
+  }
+  if(newSignals.length){signals=newSignals.concat(signals).slice(0,50);localStorage.setItem('spectra_signals',JSON.stringify(signals));}
+  renderSignals();updateDashSignals();
+  document.getElementById('scanStatus').style.display='none';
+  btn.disabled=false;btn.textContent='⚡ ESCANEAR MERCADO';
+  isScanning=false;
+  toast(newSignals.length+' sinais gerados','ok');
+}
+
+function exJSON(t){
+  if(!t)return null;
+  var s=t.replace(/```json\s*/gi,'').replace(/```/g,'').replace(/<json>/gi,'').replace(/<\/json>/gi,'').trim();
+  var start=s.indexOf('{');if(start===-1)return null;
+  var depth=0,inStr=false,esc=false,end=-1;
+  for(var i=start;i<s.length;i++){var ch=s[i];if(esc){esc=false;continue;}if(ch==='\\'){esc=true;continue;}if(ch==='"'){inStr=!inStr;continue;}if(inStr)continue;if(ch==='{')depth++;if(ch==='}'){depth--;if(depth===0){end=i+1;break;}}}
+  if(end<=start)return null;
+  var j=s.substring(start,end);
+  try{return JSON.parse(j);}catch(e){try{return JSON.parse(j.replace(/,\s*}/g,'}'));}catch(e2){return null;}}
+}
+
+function renderSignals(){
+  var html='';
+  if(!signals.length){document.getElementById('sigList').innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Clique em "Escanear Mercado" para a IA analisar os ativos monitorados.</div></div>';return;}
+  signals.forEach(function(s){
+    var dir=(s.direcao||'').toUpperCase();
+    var cls=dir==='LONG'?'long':dir==='SHORT'?'short':'wait';
+    var dirTxt=dir==='LONG'?'▲ LONG':dir==='SHORT'?'▼ SHORT':'◆ AGUARDAR';
+    var pair=s.par||'—';
+    var f=function(v){if(!v||v===0)return'—';return typeof v==='number'?v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6}):v;};
+    var pills='';
+    if(s.pilares){for(var k in s.pilares){var v=s.pilares[k]||'';var pc=v.indexOf('▲')>-1?'pill-g':v.indexOf('▼')>-1?'pill-r':'pill-n';pills+='<span class="pill '+pc+'">'+v+'</span>';}}
+    var time=s.time?new Date(s.time).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—';
+    html+='<div class="sig '+cls+'">'
+      +'<div class="sig-top"><span class="sig-pair">'+pair.replace('USDT','')+'</span><span class="sig-dir '+cls+'">'+dirTxt+'</span></div>'
+      +'<div class="sig-grid">'
+      +'<div class="sig-cell"><div class="sig-cell-label">ENTRADA</div><div class="sig-cell-val">'+f(s.entrada)+'</div></div>'
+      +'<div class="sig-cell"><div class="sig-cell-label" style="color:var(--red)">STOP</div><div class="sig-cell-val" style="color:var(--red)">'+f(s.stop)+'</div></div>'
+      +'<div class="sig-cell"><div class="sig-cell-label" style="color:var(--grn)">TP1</div><div class="sig-cell-val" style="color:var(--grn)">'+f(s.tp1)+'</div></div>'
+      +'</div>'
+      +'<div class="sig-meta"><span>'+time+' • '+(s.estrelas||'—')+'</span><span class="sig-rr">R:R '+(s.rr||'—')+'</span></div>'
+      +'<div class="sig-pills">'+pills+'</div>'
+      +'</div>';
+  });
+  document.getElementById('sigList').innerHTML=html;
+}
+
+function updateDashSignals(){
+  document.getElementById('dSinais').textContent=signals.filter(function(s){return new Date(s.time).toDateString()===new Date().toDateString();}).length;
+  if(signals.length){
+    var last=signals[0];
+    var dir=(last.direcao||'').toUpperCase();
+    var cls=dir==='LONG'?'long':dir==='SHORT'?'short':'wait';
+    document.getElementById('dashLastSignal').innerHTML='<div class="sig '+cls+'" style="margin:0">'
+      +'<div class="sig-top"><span class="sig-pair">'+(last.par||'—').replace('USDT','')+'</span><span class="sig-dir '+cls+'">'+(dir==='LONG'?'▲ LONG':dir==='SHORT'?'▼ SHORT':'◆ AGUARDAR')+'</span></div>'
+      +'<div class="sig-meta"><span>'+(last.estrelas||'')+'</span><span class="sig-rr">R:R '+(last.rr||'—')+'</span></div>'
+      +'<div style="font-size:12px;color:var(--t2);margin-top:6px">'+(last.resumo||'')+'</div></div>';
+  }
+}
+
+// ═══ TOAST ═══
+function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast on '+(type||'ok');setTimeout(function(){t.classList.remove('on');},3000);}
+
+// Init signals from localStorage
+renderSignals();updateDashSignals();
+</script>
+</body>
+</html>
