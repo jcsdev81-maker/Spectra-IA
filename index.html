@@ -194,12 +194,11 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
     </div>
     <!-- SINAIS -->
     <div class="page" id="pg-sig">
-      <div style="display:flex;gap:6px;margin-bottom:8px">
-        <select id="sigPair" style="flex:1;background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:10px 12px;color:var(--t1);font-family:var(--f2);font-size:12px;outline:none"></select>
-        <button id="btnAn" onclick="analisarUm()" style="padding:10px 16px;background:var(--accd);border:1px solid var(--acc);border-radius:8px;color:var(--acc);font-family:var(--f2);font-size:11px;font-weight:600;white-space:nowrap">⚡ ANALISAR</button>
+      <div style="margin-bottom:12px">
+        <label style="font-family:var(--f2);font-size:9px;color:var(--t3);letter-spacing:1.5px;display:block;margin-bottom:6px">SELECIONE O PAR</label>
+        <select id="sigPair" style="width:100%;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:14px 16px;color:var(--t1);font-family:var(--f2);font-size:14px;outline:none;margin-bottom:10px;cursor:pointer;appearance:auto"></select>
+        <button id="btnAn" onclick="analisarUm()" style="width:100%;padding:16px;background:var(--grd);border:none;border-radius:10px;color:#000;font-family:var(--f1);font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden">⚡ ANALISAR COM SPEC MIND</button>
       </div>
-      <button class="btn-scan" id="btnScan" onclick="scanAll()" style="font-size:10px;padding:10px;opacity:.7">🔄 ANALISAR TODOS MONITORADOS</button>
-      <div style="height:3px;background:var(--bg);border-radius:2px;margin:-6px 0 8px;overflow:hidden"><div id="scanProg" style="height:100%;background:var(--acc);width:0%;transition:width .3s"></div></div>
       <div id="scanSt" style="display:none;text-align:center;padding:8px;font-family:var(--f2);font-size:10px;color:var(--acc);margin-bottom:6px"><div class="ld" style="margin-right:6px;vertical-align:middle"></div><span id="scanTxt">Analisando...</span></div>
       <!-- PILLAR ANIMATION -->
       <div class="scan-anim" id="scanAnim">
@@ -237,6 +236,24 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
     </div>
     <!-- ALERTAS -->
     <div class="page" id="pg-alert">
+      <!-- AUTO-SCAN -->
+      <div class="card" style="border-color:var(--acc);margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div><div style="font-family:var(--f2);font-size:10px;color:var(--acc);letter-spacing:1.5px;font-weight:600">⚡ AUTO-SCAN</div><div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:2px">Escaneia monitorados automaticamente</div></div>
+          <button id="tgAutoScan" class="al-toggle" onclick="toggleAutoScan(this)"></button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <span style="font-family:var(--f2);font-size:9px;color:var(--t3)">Intervalo:</span>
+          <select id="scanInterval" style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;color:var(--t1);font-family:var(--f2);font-size:11px;outline:none" onchange="updateAutoInterval()">
+            <option value="240" selected>4 horas</option>
+            <option value="480">8 horas</option>
+            <option value="720">12 horas</option>
+          </select>
+        </div>
+        <div id="autoStatus" style="font-family:var(--f2);font-size:9px;color:var(--t3);padding:6px;background:var(--bg);border-radius:6px;text-align:center">Desativado</div>
+        <div id="autoLog" style="max-height:100px;overflow-y:auto;margin-top:8px;font-family:var(--f2);font-size:9px;color:var(--t3);line-height:1.8"></div>
+      </div>
+
       <input class="key-input" type="text" id="searchPair" placeholder="🔍 Buscar par..." oninput="filterPairs()" style="margin-bottom:8px">
       <div style="display:flex;gap:4px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none">
         <button onclick="aFilt='ALL';filterPairs()" style="flex-shrink:0;padding:5px 12px;border:1px solid var(--acc);border-radius:4px;background:var(--accd);color:var(--acc);font-family:var(--f2);font-size:9px;cursor:pointer">TODOS</button>
@@ -246,7 +263,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
         <button onclick="aFilt='MEME';filterPairs()" style="flex-shrink:0;padding:5px 12px;border:1px solid var(--brd);border-radius:4px;background:transparent;color:var(--t2);font-family:var(--f2);font-size:9px;cursor:pointer">MEME</button>
         <button onclick="aFilt='AI';filterPairs()" style="flex-shrink:0;padding:5px 12px;border:1px solid var(--brd);border-radius:4px;background:transparent;color:var(--t2);font-family:var(--f2);font-size:9px;cursor:pointer">AI</button>
       </div>
-      <div class="sec">PARES MONITORADOS</div>
+      <div class="sec">PARES MONITORADOS (<span id="monCount">0</span>)</div>
       <div id="alertList"></div>
     </div>
     <!-- CONFIG -->
@@ -264,6 +281,23 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
           <span style="font-family:var(--f2);font-size:10px;color:var(--grn)">● Ativo</span>
         </div>
         <div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:6px">Gemini 2.5 Flash • 7 Pilares • Dados Binance em tempo real</div>
+      </div>
+      <div class="sec">TELEGRAM</div>
+      <div class="acc-card">
+        <div style="font-family:var(--f2);font-size:10px;color:var(--t2);line-height:1.6;margin-bottom:10px">Receba sinais direto no seu Telegram quando o auto-scan encontrar oportunidades.</div>
+        <div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-bottom:8px;line-height:1.5">
+          <strong style="color:var(--acc)">Como configurar:</strong><br>
+          1. Abra o Telegram e procure <strong style="color:var(--t1)">@especulador_sinais_bot</strong><br>
+          2. Envie <strong style="color:var(--t1)">/start</strong><br>
+          3. O bot vai responder com seu Chat ID<br>
+          4. Cole o número abaixo e salve
+        </div>
+        <input class="key-input" type="text" id="tgChatInput" placeholder="Seu Chat ID (ex: 498906623)" style="margin-bottom:8px">
+        <div style="display:flex;gap:6px">
+          <button onclick="saveTgChat()" style="flex:1;padding:10px;border:none;border-radius:6px;background:var(--grn);color:#000;font-family:var(--f2);font-size:11px;font-weight:600;cursor:pointer">SALVAR</button>
+          <button onclick="testTgChat()" style="padding:10px 14px;border:1px solid var(--acc);border-radius:6px;background:var(--accd);color:var(--acc);font-family:var(--f2);font-size:11px;cursor:pointer">TESTAR</button>
+        </div>
+        <div id="tgStatus" style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:8px;text-align:center"></div>
       </div>
       <div class="sec">SUPORTE</div>
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -352,6 +386,9 @@ function showApp(){
     var ap=document.getElementById('accPlan');if(ap)ap.textContent=isPrem?'Premium':'Trial (3 dias)';
     var ad=document.getElementById('accDays');if(ad)ad.textContent=isPrem?'Ilimitado':Math.max(0,Math.ceil((new Date(new Date(curProfile.trial_start).getTime()+curProfile.trial_days*86400000).getTime()-Date.now())/86400000))+' dias';
     var ac=document.getElementById('accDate');if(ac)ac.textContent=new Date(curProfile.created_at).toLocaleDateString('pt-BR');
+    // Telegram
+    var tgIn=document.getElementById('tgChatInput');
+    if(tgIn&&curProfile.telegram_chat_id){tgIn.value=curProfile.telegram_chat_id;document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Configurado</span>';}
   }
   fetchTicker();filterPairs();renderSignals();updateDash();
 }
@@ -383,7 +420,6 @@ function stopPillarAnim(result){
 // ── CONFIG ──
 var PROXIES=['https://especulador-specmind.jamiscosta81.workers.dev','https://especulador-specmind.jamiscosta81.workers.dev'];
 var pIdx=0;
-var gemKey=localStorage.getItem('GEMINI_API_KEY')||'';
 var signals=[];
 var monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
 var isScanning=false,isAnalyzing=false,aFilt='ALL';
@@ -391,64 +427,39 @@ var isScanning=false,isAnalyzing=false,aFilt='ALL';
 function uKey(name){return curUser?name+'_'+curUser.id:name}
 function loadUserData(){
   signals=JSON.parse(localStorage.getItem(uKey('spectra_sig'))||'[]');
-  monitored=JSON.parse(localStorage.getItem(uKey('spectra_mon'))||'["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT"]');
+  // Prioritize Supabase data over localStorage
+  if(curProfile&&curProfile.monitored_pairs){
+    try{monitored=JSON.parse(curProfile.monitored_pairs)}catch(e){monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT']}
+  }else{
+    monitored=JSON.parse(localStorage.getItem(uKey('spectra_mon'))||'["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT"]');
+  }
 }
 function saveSigs(){localStorage.setItem(uKey('spectra_sig'),JSON.stringify(signals))}
-function saveMon(){localStorage.setItem(uKey('spectra_mon'),JSON.stringify(monitored))}
+function saveMon(){localStorage.setItem(uKey('spectra_mon'),JSON.stringify(monitored));if(sb&&curUser)sb.from('profiles').update({monitored_pairs:JSON.stringify(monitored)}).eq('id',curUser.id);}
 
-// ── GEMINI API CALL (dual mode) ──
+// ── GEMINI API CALL (via proxy — garante Telegram) ──
 async function callGemini(systemPrompt,userText){
-  console.log('[SPECTRA] callGemini — mode:'+(gemKey?'DIRECT':'PROXY'));
+  console.log('[SPECTRA] callGemini via PROXY');
   var controller=new AbortController();
   var timeout=setTimeout(function(){controller.abort()},60000);
-
   try{
-    if(gemKey){
-      // ─ CHAMADA DIRETA GEMINI ─
-      var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+gemKey;
-      var body={
-        system_instruction:{parts:[{text:systemPrompt}]},
-        contents:[{role:'user',parts:[{text:userText}]}],
-        generationConfig:{
-          maxOutputTokens:2000,
-          thinkingConfig:{thinkingBudget:0}
-        }
-      };
-      console.log('[SPECTRA] Enviando para Gemini (direta)...');
-      var res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal});
-      clearTimeout(timeout);
-      console.log('[SPECTRA] Gemini respondeu — status:',res.status);
-      if(!res.ok){
-        var errBody=await res.text();
-        console.error('[SPECTRA] Gemini erro body:',errBody);
-        try{var errJ=JSON.parse(errBody);throw new Error(errJ.error&&errJ.error.message?errJ.error.message:'HTTP '+res.status)}catch(pe){if(pe.message.indexOf('HTTP')===0)throw pe;throw new Error('Gemini HTTP '+res.status+': '+errBody.substring(0,100));}
-      }
-      var data=await res.json();
-      console.log('[SPECTRA] Gemini data keys:',Object.keys(data));
-      if(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts){
-        var txt=data.candidates[0].content.parts.map(function(p){return p.text||''}).join('');
-        console.log('[SPECTRA] Gemini texto recebido:',txt.substring(0,200)+'...');
-        return txt;
-      }
-      console.error('[SPECTRA] Gemini resposta sem candidates:',JSON.stringify(data).substring(0,300));
-      throw new Error('Gemini respondeu mas sem conteúdo válido');
-
-    }else{
-      // ─ VIA PROXY ─
-      var proxy=PROXIES[pIdx];pIdx=(pIdx+1)%PROXIES.length;
-      var payload={system:systemPrompt,messages:[{role:'user',parts:[{text:userText}]}],max_tokens:2000};
-      console.log('[SPECTRA] Enviando para proxy:',proxy);
-      var res=await fetch(proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
-      clearTimeout(timeout);
-      console.log('[SPECTRA] Proxy respondeu — status:',res.status);
-      if(!res.ok){var errTxt=await res.text();console.error('[SPECTRA] Proxy erro:',errTxt);throw new Error('Proxy '+res.status+': '+errTxt.substring(0,80));}
-      var data=await res.json();
-      console.log('[SPECTRA] Proxy data keys:',Object.keys(data));
-      if(data.candidates&&data.candidates[0]&&data.candidates[0].content)return data.candidates[0].content.parts[0].text||'';
-      if(data.content&&data.content[0]&&data.content[0].text)return data.content[0].text;
-      console.error('[SPECTRA] Proxy sem conteúdo:',JSON.stringify(data).substring(0,300));
-      throw new Error('Proxy respondeu mas sem conteúdo');
+    var proxy=PROXIES[pIdx];pIdx=(pIdx+1)%PROXIES.length;
+    var payload={system:systemPrompt,messages:[{role:'user',parts:[{text:userText}]}],max_tokens:2000};
+    console.log('[SPECTRA] Enviando para:',proxy);
+    var res=await fetch(proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
+    clearTimeout(timeout);
+    console.log('[SPECTRA] Proxy respondeu — status:',res.status);
+    if(!res.ok){var errTxt=await res.text();console.error('[SPECTRA] Proxy erro:',errTxt);throw new Error('Proxy '+res.status+': '+errTxt.substring(0,80));}
+    var data=await res.json();
+    console.log('[SPECTRA] Proxy data keys:',Object.keys(data));
+    if(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts){
+      var txt=data.candidates[0].content.parts.map(function(p){return p.text||''}).join('');
+      console.log('[SPECTRA] Texto recebido:',txt.substring(0,200)+'...');
+      return txt;
     }
+    if(data.content&&data.content[0]&&data.content[0].text)return data.content[0].text;
+    console.error('[SPECTRA] Proxy sem conteúdo:',JSON.stringify(data).substring(0,300));
+    throw new Error('Proxy respondeu sem conteúdo');
   }catch(e){
     clearTimeout(timeout);
     if(e.name==='AbortError'){console.error('[SPECTRA] TIMEOUT 60s');throw new Error('Timeout (60s) — tente de novo');}
@@ -704,7 +715,7 @@ function popPairSel(){var s=document.getElementById('sigPair');if(!s)return;var 
 
 // ── ALERTAS/PARES ──
 function filterPairs(){var q=(document.getElementById('searchPair')?document.getElementById('searchPair').value:'').toUpperCase();var list=ALL_PAIRS.filter(function(p){return(!q||p.indexOf(q)>-1)&&(aFilt==='ALL'||(CATS[p]||'')==aFilt)});var h='';list.forEach(function(p){var n=p.replace('USDT',''),on=monitored.indexOf(p)>-1,cat=CATS[p]||'',cc=cat==='L1'?'var(--acc)':cat==='MEME'?'var(--amb)':cat==='DEFI'?'var(--grn)':cat==='AI'?'#B388FF':'var(--t3)';h+='<div class="al"><div class="al-left"><span class="al-sym">'+n+'</span><span style="font-family:var(--f2);font-size:7px;color:'+cc+';margin-left:4px">'+cat+'</span></div><button class="al-toggle'+(on?' on':'')+'" onclick="togglePair(\''+p+'\',this)"></button></div>'});document.getElementById('alertList').innerHTML=h;document.getElementById('dAtivos').textContent=monitored.length;}
-function togglePair(p,btn){var i=monitored.indexOf(p);if(i>-1)monitored.splice(i,1);else monitored.push(p);btn.classList.toggle('on');saveMon();document.getElementById('dAtivos').textContent=monitored.length;}
+function togglePair(p,btn){var i=monitored.indexOf(p);if(i>-1)monitored.splice(i,1);else monitored.push(p);btn.classList.toggle('on');saveMon();document.getElementById('dAtivos').textContent=monitored.length;var mc=document.getElementById('monCount');if(mc)mc.textContent=monitored.length;}
 
 // ── TICKER ──
 async function fetchTicker(){try{var r=await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT"]');var d=await r.json();var h='';d.forEach(function(t){var n=t.symbol.replace('USDT',''),p=parseFloat(t.lastPrice),c=parseFloat(t.priceChangePercent);h+='<div style="flex-shrink:0;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;min-width:90px"><div style="font-family:var(--f2);font-size:8px;color:var(--t3)">'+n+'</div><div style="font-family:var(--f2);font-size:12px;font-weight:600;margin-top:1px">$'+(p<100?p.toFixed(2):p.toLocaleString("en-US",{maximumFractionDigits:0}))+'</div><div style="font-family:var(--f2);font-size:9px;font-weight:600;color:'+(c>=0?'var(--grn)':'var(--red)')+'">'+(c>=0?'▲':'▼')+Math.abs(c).toFixed(1)+'%</div></div>'});var el=document.getElementById('mTicker');if(el)el.innerHTML=h;d.forEach(function(t){if(t.symbol==='BTCUSDT'||t.symbol==='ETHUSDT'){var s=t.symbol==='BTCUSDT'?'BTC':'ETH';var p=parseFloat(t.lastPrice);var c=parseFloat(t.priceChangePercent);var pe=document.getElementById('dm'+s);if(pe)pe.textContent='$'+p.toLocaleString('en-US',{maximumFractionDigits:0});var ce=document.getElementById('dm'+s+'c');if(ce){ce.textContent=(c>=0?'▲':'▼')+Math.abs(c).toFixed(1)+'%';ce.style.color=c>=0?'var(--grn)':'var(--red)';}}});}catch(e){console.log('[SPECTRA] Ticker error:',e.message)}}
@@ -725,7 +736,16 @@ function mapSignal(raw,pair){
     var forca=Math.round(fav/tot*100);
     var pillMap={};
     if(c.pilares){var names={elliott:'Elliott',fibonacci:'Fibo',macd_12_72:'MACD',dow:'Dow',wyckoff:'Wyckoff',gann:'Gann',price_action:'PA'};for(var k in c.pilares){var pi=c.pilares[k];var d=pi.direcao||'';var icon=d.indexOf('COMPRADOR')>-1?'▲':d.indexOf('VENDEDOR')>-1?'▼':'◆';pillMap[names[k]||k]=icon+' '+(pi.analise||d).substring(0,30);}}
-    return{par:raw.ativo||pair,direcao:direcao,forca:forca,estrelas:c.classificacao||('★'.repeat(fav)),entrada:g.entrada_sugerida||0,stop:g.stop_loss||0,tp1:g.alvo_1||0,tp2:g.alvo_2||0,tp3:g.alvo_3||0,rr:g.rr_ratio||'—',pilares:pillMap,motivo:raw.narrativa||'',veredicto:raw.veredicto||'',time:new Date().toISOString()};
+    var rrStr=g.rr_ratio||'—';
+    // ── R:R mínimo 2:1 — abaixo disso não opera ──
+    var rrNum=0;var rrMatch=(rrStr+'').match(/([\d.]+)/);if(rrMatch)rrNum=parseFloat(rrMatch[1]);
+    if(rrNum>0&&rrNum<2&&direcao!=='AGUARDAR'){
+      console.log('[SPECTRA] R:R '+rrStr+' < 2:1 — forçando AGUARDAR');
+      direcao='AGUARDAR';
+      raw.veredicto='AGUARDAR';
+      raw.narrativa=(raw.narrativa||'')+' R:R abaixo de 2:1 — sem edge suficiente para operar.';
+    }
+    return{par:raw.ativo||pair,direcao:direcao,forca:forca,estrelas:c.classificacao||('★'.repeat(fav)),entrada:g.entrada_sugerida||0,stop:g.stop_loss||0,tp1:g.alvo_1||0,tp2:g.alvo_2||0,tp3:g.alvo_3||0,rr:rrStr,pilares:pillMap,motivo:raw.narrativa||'',veredicto:raw.veredicto||'',time:new Date().toISOString()};
   }
   if(raw.par&&raw.direcao)return raw;
   console.error('[SPECTRA] mapSignal: formato desconhecido',Object.keys(raw));
@@ -754,7 +774,7 @@ async function analisarUm(){
   if(isAnalyzing||isScanning)return;isAnalyzing=true;
   var pair=document.getElementById('sigPair').value;
   if(!pair){toast('Selecione um par','err');isAnalyzing=false;return;}
-  var btn=document.getElementById('btnAn');btn.disabled=true;btn.textContent='⏳...';
+  var btn=document.getElementById('btnAn');btn.disabled=true;btn.style.opacity='0.6';btn.textContent='⏳ SPEC MIND ANALISANDO...';
   var st=document.getElementById('scanSt');st.style.display='block';
   console.log('[SPECTRA] ══════ ANALISANDO:',pair,'══════');
   try{
@@ -773,29 +793,8 @@ async function analisarUm(){
     if(sig){sig.time=new Date().toISOString();signals.unshift(sig);signals=signals.slice(0,100);saveSigs();toast(pair.replace('USDT','')+' → '+(sig.direcao||'OK')+' '+(sig.estrelas||''),'ok');alertBeep(sig);}
     else{toast('Mapeamento falhou — veja console','err');}
   }catch(e){stopPillarAnim();console.error('[SPECTRA] analisarUm ERRO:',e);toast('Erro: '+e.message,'err');}
-  st.style.display='none';btn.disabled=false;btn.textContent='⚡ ANALISAR';
+  st.style.display='none';btn.disabled=false;btn.style.opacity='1';btn.textContent='⚡ ANALISAR COM SPEC MIND';
   isAnalyzing=false;renderSignals();updateDash();
-}
-
-// ── SCAN TODOS ──
-async function scanAll(){
-  if(isScanning||isAnalyzing)return;isScanning=true;
-  var btn=document.getElementById('btnScan');btn.disabled=true;btn.textContent='ESCANEANDO...';
-  document.getElementById('scanSt').style.display='block';
-  var prog=document.getElementById('scanProg'),n=monitored.length,news=[];
-  for(var i=0;i<n;i++){
-    var pair=monitored[i];
-    document.getElementById('scanTxt').textContent=pair.replace('USDT','')+' ('+(i+1)+'/'+n+')';
-    prog.style.width=((i+1)/n*100)+'%';
-    try{var mkt=await buildMktStr(pair);var text=await callGemini(SYSTEM_PROMPT,mkt);var raw=exJSON(text);var sig=mapSignal(raw,pair);if(sig){sig.time=new Date().toISOString();news.push(sig);}}
-    catch(e){console.log('[SPECTRA] Scan erro:',pair,e.message);}
-    if(i<n-1)await new Promise(function(ok){setTimeout(ok,3000)});
-  }
-  if(news.length){signals=news.concat(signals).slice(0,100);saveSigs();}
-  renderSignals();updateDash();
-  document.getElementById('scanSt').style.display='none';prog.style.width='0%';
-  btn.disabled=false;btn.textContent='🔄 ANALISAR TODOS MONITORADOS';
-  isScanning=false;toast(news.length+' sinais gerados','ok');
 }
 
 // ── RENDER SIGNALS ──
@@ -825,8 +824,15 @@ function clearSigs(){if(!signals.length)return;if(!confirm('Limpar?'))return;sig
 
 // ── DASHBOARD ──
 function updateDash(){
-  document.getElementById('dSinais').textContent=signals.filter(function(s){return new Date(s.time).toDateString()===new Date().toDateString()}).length;
+  var todayN=signals.filter(function(s){return new Date(s.time).toDateString()===new Date().toDateString()}).length;
+  document.getElementById('dSinais').textContent=todayN;
   document.getElementById('dTotal').textContent=signals.length;
+  // Confluência média
+  if(signals.length){
+    var totalStars=0,counted=0;
+    signals.forEach(function(s){var m=(s.estrelas||'').match(/(\d+)/);if(m){totalStars+=parseInt(m[1]);counted++;}});
+    document.getElementById('dWin').textContent=counted>0?'★'+(totalStars/counted).toFixed(1):'—';
+  }
   if(signals.length){var s=signals[0];
     document.getElementById('dashLast').innerHTML='<div class="sig '+(s.direcao==='LONG'?'long':s.direcao==='SHORT'?'short':'wait')+'" style="margin:0"><div class="sig-top"><span class="sig-pair">'+(s.par||'').replace('USDT','')+'</span><span class="sig-dir '+(s.direcao==='LONG'?'long':s.direcao==='SHORT'?'short':'wait')+'">'+(s.direcao==='LONG'?'▲ LONG':s.direcao==='SHORT'?'▼ SHORT':'◆ AGUARDAR')+'</span></div>'
     +'<div class="str-meter" style="margin:8px 14px 0"><div class="str-label">FORÇA</div><div class="str-bar"><div class="str-fill" style="width:'+(s.forca||50)+'%;background:'+(s.forca>=70?'var(--grn)':'var(--amb)')+'"></div></div><div class="str-pct" style="color:'+(s.forca>=70?'var(--grn)':'var(--amb)')+'">'+(s.forca||50)+'%</div></div>'
@@ -854,8 +860,119 @@ document.addEventListener('click',function(){if(!audioCtx)try{audioCtx=new(windo
 function alertBeep(sig){if(navigator.vibrate){if((sig.forca||0)>=70)navigator.vibrate([200,100,200,100,200]);else navigator.vibrate([200,100,200]);}if(!audioCtx)return;var dir=(sig.direcao||'').toUpperCase();try{if(dir==='LONG'){beep(660,.12);setTimeout(function(){beep(880,.12)},130);setTimeout(function(){beep(1100,.15)},260);}else if(dir==='SHORT'){beep(880,.12);setTimeout(function(){beep(660,.12)},130);setTimeout(function(){beep(440,.15)},260);}}catch(e){}}
 function beep(f,d){var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=f;g.gain.value=.3;g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+d);o.start();o.stop(audioCtx.currentTime+d);}
 
+// ── AUTO-SCAN ──
+var autoScanOn=false,autoScanTimer=null,autoCountdown=null;
+var autoIntervalMin=240;
+
+function toggleAutoScan(btn){
+  autoScanOn=!autoScanOn;
+  btn.classList.toggle('on');
+  if(autoScanOn){startAutoScan()}else{stopAutoScan()}
+  if(sb&&curUser)sb.from('profiles').update({auto_scan:autoScanOn}).eq('id',curUser.id);
+}
+
+function updateAutoInterval(){
+  autoIntervalMin=parseInt(document.getElementById('scanInterval').value)||240;
+  if(autoScanOn){stopAutoScan();startAutoScan();}
+}
+
+function startAutoScan(){
+  autoScanOn=true;
+  var st=document.getElementById('autoStatus');
+  st.style.color='var(--grn)';
+  autoLog('Auto-scan ativado — intervalo: '+(autoIntervalMin>=60?(autoIntervalMin/60)+'h':autoIntervalMin+'min'));
+  // Run first scan now
+  runAutoScan();
+  // Schedule next
+  autoScanTimer=setInterval(runAutoScan,autoIntervalMin*60*1000);
+  startCountdown();
+}
+
+function stopAutoScan(){
+  autoScanOn=false;
+  if(autoScanTimer){clearInterval(autoScanTimer);autoScanTimer=null;}
+  if(autoCountdown){clearInterval(autoCountdown);autoCountdown=null;}
+  var st=document.getElementById('autoStatus');
+  st.textContent='Desativado';st.style.color='var(--t3)';
+  autoLog('Auto-scan desativado');
+}
+
+function startCountdown(){
+  if(autoCountdown)clearInterval(autoCountdown);
+  var next=Date.now()+autoIntervalMin*60*1000;
+  autoCountdown=setInterval(function(){
+    var left=Math.max(0,next-Date.now());
+    if(left<=0){next=Date.now()+autoIntervalMin*60*1000;}
+    var h=Math.floor(left/3600000),m=Math.floor((left%3600000)/60000),s=Math.floor((left%60000)/1000);
+    var st=document.getElementById('autoStatus');
+    if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — próximo scan: '+h+'h'+String(m).padStart(2,'0')+'m'+String(s).padStart(2,'0')+'s';
+  },1000);
+}
+
+async function runAutoScan(){
+  if(isAnalyzing)return;
+  autoLog('Iniciando scan automático...');
+  var found=0;
+  for(var i=0;i<monitored.length;i++){
+    var pair=monitored[i];
+    autoLog('Analisando '+pair.replace('USDT','')+'...');
+    try{
+      var mkt=await buildMktStr(pair);
+      var text=await callGemini(SYSTEM_PROMPT,mkt);
+      var raw=exJSON(text);
+      var sig=mapSignal(raw,pair);
+      if(sig){
+        sig.time=new Date().toISOString();
+        signals.unshift(sig);signals=signals.slice(0,100);saveSigs();
+        var dir=(sig.direcao||'').toUpperCase();
+        if(dir==='LONG'||dir==='SHORT'){
+          found++;
+          alertBeep(sig);
+          toast('🔔 '+pair.replace('USDT','')+' → '+dir+' '+(sig.estrelas||''),'ok');
+          autoLog('✅ '+pair.replace('USDT','')+' → '+dir+' R:R '+(sig.rr||'—'));
+        }else{
+          autoLog('◆ '+pair.replace('USDT','')+' → AGUARDAR');
+        }
+      }
+    }catch(e){autoLog('❌ '+pair.replace('USDT','')+': '+e.message);}
+    if(i<monitored.length-1)await new Promise(function(ok){setTimeout(ok,3000)});
+  }
+  renderSignals();updateDash();
+  autoLog('Scan completo — '+found+' sinais operáveis de '+monitored.length+' pares');
+  startCountdown();
+}
+
+function autoLog(msg){
+  var el=document.getElementById('autoLog');if(!el)return;
+  var now=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  el.innerHTML+='<div>['+now+'] '+msg+'</div>';
+  el.scrollTop=el.scrollHeight;
+}
+
+// ── TELEGRAM PER USER ──
+function saveTgChat(){
+  var chatId=document.getElementById('tgChatInput').value.trim();
+  if(!chatId){toast('Cole seu Chat ID','err');return;}
+  if(sb&&curUser){
+    sb.from('profiles').update({telegram_chat_id:chatId}).eq('id',curUser.id).then(function(){
+      document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Chat ID salvo</span>';
+      toast('Telegram configurado!','ok');
+    });
+  }else{toast('Faça login primeiro','err');}
+}
+async function testTgChat(){
+  var chatId=document.getElementById('tgChatInput').value.trim();
+  if(!chatId){toast('Cole o Chat ID primeiro','err');return;}
+  try{
+    var r=await fetch(PROXIES[0]+'/test-tg?chat='+encodeURIComponent(chatId));
+    var d=await r.json();
+    if(d.status==='ok'){toast('Mensagem enviada!','ok');document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Funcionando</span>';}
+    else{toast('Erro: '+(d.msg||'falha'),'err');document.getElementById('tgStatus').innerHTML='<span style="color:var(--red)">✗ Falhou</span>';}
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
 // ── INIT ──
-console.log('[SPECTRA] Init — signals:',signals.length,'monitored:',monitored.length,'mode:'+(gemKey?'DIRECT':'PROXY'));
+console.log('[SPECTRA] Init — signals:',signals.length,'monitored:',monitored.length,'mode:PROXY');
 popPairSel();
 
 </script>
