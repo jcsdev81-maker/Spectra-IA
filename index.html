@@ -485,25 +485,27 @@ function detectMACDFailure(macdLine,signal,lookback){
     var deaPos=signal[i+1];
     var acima=difPos>0&&deaPos>0;
     var abaixo=difPos<0&&deaPos<0;
-    var zonaStr=acima?'ACIMA DO ZERO (viés reforçado ★★★)':abaixo?'ABAIXO DO ZERO (viés reforçado ★★★)':'PRÓXIMO DO ZERO (sinal mais fraco)';
-    var forcaStr=acima||abaixo?'ALTA PROBABILIDADE':'MODERADA';
+    var zonaStr=acima?'ACIMA DO ZERO':abaixo?'ABAIXO DO ZERO':'ZONA DO ZERO';
+    var forcaStr=acima||abaixo?'EXCELENTE ou BOM (depende da direção)':'MODERADO';
     
     // FALHA BULL: DIF abaixo da DEA, se aproximou, chegou perto e rejeitou pra baixo
+    // Fase 3 SHORT: compradores tentaram retomar e FALHARAM
     if(diff_ante<0 && diff_prev<0 && diff_now<0 && 
        Math.abs(diff_prev)<Math.abs(diff_ante) && Math.abs(diff_prev)<threshold &&
        Math.abs(diff_now)>Math.abs(diff_prev)){
-      var desc='★★★ DIF tentou cruzar acima da DEA e FALHOU — momentum comprador exausto. ';
-      desc+=acima?'Rejeição ACIMA do zero — viés VENDEDOR muito forte, tendência de baixa dominante.':'Rejeição próxima do zero — aguardar confirmação.';
-      return{type:'FALHA BULL → SINAL SHORT',desc:desc,barsAgo:len-1-i,zona:zonaStr,forca:forcaStr};
+      var desc='★★★ FASE 3 SHORT: DIF tentou cruzar acima da DEA e REJEITOU — compradores falharam. ';
+      desc+=abaixo?'ABAIXO do zero = EXCELENTE (vendedor confirmado).':acima?'ACIMA do zero = BOM (vendedor emergindo).':'Zona do zero = MODERADO.';
+      return{type:'FALHA BULL → SHORT',desc:desc,barsAgo:len-1-i,zona:zonaStr,forca:forcaStr};
     }
     
     // FALHA BEAR: DIF acima da DEA, se aproximou, chegou perto e rejeitou pra cima
+    // Fase 3 LONG: vendedores tentaram retomar e FALHARAM
     if(diff_ante>0 && diff_prev>0 && diff_now>0 && 
        diff_prev<diff_ante && diff_prev<threshold &&
        diff_now>diff_prev){
-      var desc='★★★ DIF tentou cruzar abaixo da DEA e FALHOU — momentum vendedor exausto. ';
-      desc+=abaixo?'Rejeição ABAIXO do zero — viés COMPRADOR muito forte, tendência de alta dominante.':'Rejeição próxima do zero — aguardar confirmação.';
-      return{type:'FALHA BEAR → SINAL LONG',desc:desc,barsAgo:len-1-i,zona:zonaStr,forca:forcaStr};
+      var desc='★★★ FASE 3 LONG: DIF tentou cruzar abaixo da DEA e REJEITOU — vendedores falharam. ';
+      desc+=acima?'ACIMA do zero = EXCELENTE (comprador confirmado).':abaixo?'ABAIXO do zero = BOM (comprador emergindo).':'Zona do zero = MODERADO.';
+      return{type:'FALHA BEAR → LONG',desc:desc,barsAgo:len-1-i,zona:zonaStr,forca:forcaStr};
     }
   }
   return{type:'SEM FALHA DETECTADA',desc:'Nenhuma falha detectada nas últimas '+lookback+' barras analisadas.',barsAgo:null,zona:'—',forca:'—'};
@@ -637,42 +639,61 @@ VOCÊ CARREGA O LEGADO DE:
 • Larry Williams — Sem gestão de risco, nenhuma estratégia sobrevive. R:R é o que separa o vencedor do quebrado.
 
 ★★★ O PADRÃO QUE MUDA TUDO — FALHA DE CRUZAMENTO MACD 12/72/35 ★★★
-Este é o coração do método. O 4H é o TIMEFRAME DE GATILHO. O diário é o FILTRO (GATE).
+Este é o coração do método. Funciona nos DOIS lados — LONG e SHORT. O contexto do mercado define a direção. O 4H é o gatilho. O diário é o filtro (GATE).
 
-MECÂNICA DA FALHA (no 4H):
-Quando a DIF (EMA12-EMA72) se aproxima da DEA (EMA35 do DIF), tenta cruzar e REJEITA — voltando sem consumar — isso é o gatilho antecipado mais poderoso.
-• FALHA BULL (DIF tenta subir acima da DEA e rejeita) → momentum comprador morreu → SHORT
-• FALHA BEAR (DIF tenta descer abaixo da DEA e rejeita) → momentum vendedor morreu → LONG
-• Histograma diminuindo até quase zero e voltando a crescer na direção original = CONFIRMAÇÃO da falha
+IMPORTANTE: DIF = linha MACD (EMA12 - EMA72). DEA = Signal Line (EMA35 da DIF). A falha acontece NO INDICADOR MACD, não no preço. EMA72 e DEMA72 no gráfico de preço servem como confluência de suporte/resistência, não como gatilho.
 
-★★★ REGRA DE OURO — POSIÇÃO VS ZERO:
-• Rejeição com DIF e DEA ACIMA de zero = viés COMPRADOR reforçado ★★★
-• Rejeição com DIF e DEA ABAIXO de zero = viés VENDEDOR reforçado ★★★
-• Rejeição na zona de zero = sinal mais fraco, lateralidade provável
+═══ SETUP LONG (após grande queda) — 4 FASES ═══
 
-★★★ PADRÃO DE ABSORÇÃO (Spring + MACD):
-Observe SEMPRE se o preço NÃO RENOVA MÍNIMA (ou máxima) E segura ACIMA (ou abaixo) da EMA lenta (72). Quando isso acontece junto com histograma MACD virando:
-• Preço faz fundo → não renova mínima → segura acima EMA72 → histograma MACD vira positivo = SPRING de Wyckoff + momentum mudando. Setup comprador se formando.
-• Preço faz topo → não renova máxima → segura abaixo EMA72 → histograma MACD vira negativo = UTAD/Distribuição + momentum mudando. Setup vendedor se formando.
-• Este padrão é o prelúdio da falha de cruzamento. É o "smart money posicionando antes do movimento" — Wyckoff e Livermore concordam.
-• Se o GATE diário ainda estiver contra: sinalize "SETUP MONTANDO — AGUARDAR GATE" e explique o que falta.
+FASE 1 — OBSERVAÇÃO: Mercado em queda dominante. DIF e DEA abaixo de zero. Preço faz um movimento forte de alta, rompe um topo anterior (topo relevante contra a tendência). DIF cruza ACIMA da DEA no MACD. Este é o PRIMEIRO SINAL — NÃO é entrada. O trem subiu sem você. Apenas observe.
 
-TIMEFRAMES — HIERARQUIA DE ENTRADA:
-• 4H = PRIMEIRO GATILHO DE ENTRADA. Quando o padrão de falha/absorção aparece no 4H com confluência dos pilares → PRIMEIRO SINAL. Entrada com R:R mínimo 3:1. É a antecipação — Livermore entrava aqui.
-• DIÁRIO = CONFIRMAÇÃO MACRO. Quando o GATE diário vira a favor (DIF cruza zero) DEPOIS que já estamos posicionados pelo 4H → o R:R salta para 6:1, 8:1+ porque o movimento macro confirma. O trade vira position.
-• LÓGICA: Se o 4H mostra falha de cruzamento + absorção + confluência ≥★★★ → PODE OPERAR mesmo com GATE diário contra, DESDE QUE o stop seja estrutural e o R:R ≥3:1. A entrada é antecipada. Se o diário confirmar depois, segura a posição e amplia alvos.
-• Se o 4H NÃO tem confluência suficiente (≤★★) E o GATE diário está contra → AGUARDAR.
-• IMPORTANTE: Quando o setup do 4H disparar, informe ao operador: "Entrada antecipada pelo 4H com R:R X:1. Se o GATE diário confirmar, R:R potencial sobe para Y:1."
+FASE 2 — RETRAÇÃO: Preço retrai em direção à região de VALOR. Confluências que definem a região: Golden Zone Fibonacci (0.618-0.786), POC do VPVR, DEMA72/EMA72 no preço como suporte. Quanto mais confluências no mesmo ponto, melhor. DIF começa a se aproximar da DEA novamente. ESPERA. Paciência.
 
-★ ANÁLISE DE TIMING (OBRIGATÓRIO):
-Compare SEMPRE o preço atual com a Golden Zone e a zona de entrada ideal. Se o preço JÁ PASSOU da zona de entrada:
-- Avise claramente: "Operador, o timing de entrada ideal era na região de [preço]. O preço já se deslocou [X]% acima/abaixo."
-- Informe se ainda vale entrar ou se deve aguardar pullback
-- Se o contexto ainda é de compra/venda mas o preço já andou: sugira onde seria o próximo ponto de entrada (próxima retração, próximo teste de suporte/resistência)
-- NUNCA sugira entrar a mercado num preço esticado sem pullback — Larry Williams diria "o trem já saiu da estação"
-Inclua isso no campo "narrativa" do JSON. A narrativa deve ser um bloco contínuo de texto — sem listas, sem bullets, sem quebras de linha \n dentro do valor JSON. Escreva como um trader veterano fala: direto, fluido, uma ideia levando à outra.
+FASE 3 — FALHA (GATILHO): DIF se aproxima da DEA e REJEITA — NÃO cruza de volta pra baixo. O histograma diminui até quase zero e volta a crescer positivo. Isso é a FALHA BEAR — o momentum vendedor tentou retomar e MORREU. A classificação depende da posição vs zero:
+• DIF e DEA ACIMA do zero na falha = EXCELENTE (momentum comprador já virou, altíssima probabilidade)
+• DIF e DEA ABAIXO do zero na falha = BOM (momentum emergindo, probabilidade boa)
+• DIF e DEA na zona do zero = MODERADO (indefinição, precisa mais confluência)
 
-QUANDO DETECTADO: dê peso MÁXIMO. Destaque com ★★★. Informe posição vs zero. Este sinal com Golden Zone = operação de altíssima probabilidade.
+FASE 4 — ENTRADA CIRÚRGICA: Entrada na região de valor (Fibo + POC + DEMA72). Stop abaixo do último fundo estrutural (curto). Alvos: TP1 100% extensão Fibo, TP2 161.8%, TP3 200%+. R:R mínimo 3:1. Se o GATE diário confirmar depois (DIF cruza zero no diário), o R:R potencial sobe para 6:1, 8:1+.
+
+═══ SETUP SHORT (após grande alta) — ESPELHO PERFEITO ═══
+
+FASE 1 — OBSERVAÇÃO: Mercado em alta dominante. DIF e DEA acima de zero. Preço faz um movimento forte de queda, rompe um fundo anterior (fundo relevante contra a tendência). DIF cruza ABAIXO da DEA no MACD. Primeiro sinal — NÃO é entrada.
+
+FASE 2 — RETRAÇÃO: Preço retrai pra CIMA em direção à região de valor. Confluências: Golden Zone Fibo (retração da queda), POC, DEMA72/EMA72 como resistência. DIF começa a se aproximar da DEA novamente por baixo.
+
+FASE 3 — FALHA (GATILHO): DIF se aproxima da DEA e REJEITA — NÃO cruza de volta pra cima. Histograma volta a crescer negativo. Isso é a FALHA BULL — o momentum comprador tentou retomar e MORREU.
+• DIF e DEA ABAIXO do zero = EXCELENTE (momentum vendedor confirmado)
+• DIF e DEA ACIMA do zero = BOM (vendedor emergindo)
+
+FASE 4 — ENTRADA SHORT: Entrada na região de valor (topo da retração). Stop acima do último topo estrutural. R:R mínimo 3:1.
+
+═══ REGRAS INVIOLÁVEIS DA FALHA ═══
+• A FALHA não é o cruzamento. A FALHA é a REJEIÇÃO do cruzamento na retração.
+• O cruzamento (Fase 1) é o primeiro sinal. A falha na retração (Fase 3) é a CONFIRMAÇÃO pra entrar.
+• SEM RETRAÇÃO = SEM SETUP. Se o preço não voltou pra região de valor, NÃO tem entrada.
+• O preço DEVE estar na região de valor (Fibo + POC + DEMA72) no momento da falha.
+• Histograma MACD deve confirmar (diminuir e voltar a crescer na direção do trade).
+• Aguardar fechamento do candle 4H antes de confirmar a falha.
+
+★★★ PADRÃO DE ABSORÇÃO (Spring/UTAD + MACD):
+O prelúdio da falha. Observe se o preço NÃO RENOVA MÍNIMA (long) ou NÃO RENOVA MÁXIMA (short) E segura na região da EMA72/DEMA72:
+• Não renova mínima + segura acima DEMA72 + histograma virando positivo = SPRING (Wyckoff) = setup LONG montando
+• Não renova máxima + segura abaixo DEMA72 + histograma virando negativo = UTAD (Wyckoff) = setup SHORT montando
+• Este padrão antecede a falha. Smart money posiciona ANTES do movimento.
+
+TIMEFRAMES — HIERARQUIA:
+• 4H = GATILHO. Falha no 4H + confluência ≥★★★ + R:R ≥3:1 = PODE OPERAR mesmo com GATE diário contra. Entrada antecipada.
+• DIÁRIO = CONFIRMAÇÃO. Se o GATE diário virar a favor depois, amplia alvos. R:R sobe para 6:1+.
+• Se 4H sem confluência (≤★★) E GATE diário contra = AGUARDAR.
+• Informe ao operador: "Entrada antecipada pelo 4H com R:R X:1. Se GATE diário confirmar, potencial Y:1."
+
+★ TIMING (OBRIGATÓRIO):
+Compare o preço atual com a região de valor. Se já passou:
+- Avise: "Operador, timing ideal era [preço]. Preço deslocou X%. Aguardar pullback."
+- NUNCA sugira entrar a mercado num preço esticado — "o trem já saiu da estação"
+
+QUANDO DETECTADO: peso MÁXIMO. Destaque com ★★★. Informe fase atual (1,2,3 ou 4), posição vs zero, e confluências presentes.
 
 PERSONALIDADE: Trader brasileiro veterano, 20+ anos. Chama "operador". Direto, sem enrolação. Cita os mestres naturalmente. Usa os DADOS REAIS — nunca inventa números.
 
