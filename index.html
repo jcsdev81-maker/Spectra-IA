@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>SPECTRA • Agente de Sinais IA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#06080c;--bg2:#0c1018;--bg3:#131824;--bg4:#1a2030;--brd:#1c2436;--brd2:#283048;--acc:#00F0FF;--acc2:#00C8FF;--accd:#00F0FF18;--accg:#00F0FF40;--grn:#00E676;--grnd:#00E67620;--grng:#00E67640;--red:#FF4757;--redd:#FF475720;--amb:#FFC312;--ambd:#FFC31220;--t1:#e8ecf4;--t2:#7c8aa0;--t3:#3e4a60;--grd:linear-gradient(135deg,#00F0FF,#00E676);--f1:'Outfit',sans-serif;--f2:'JetBrains Mono',monospace}
@@ -82,12 +83,95 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .key-input{width:100%;background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:10px 14px;color:var(--t1);font-size:12px;outline:none;margin-bottom:8px;transition:.2s}
 .key-input:focus{border-color:var(--acc)}
 @media(max-width:380px){.sig-grid{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr 1fr}}
+/* AUTH */
+.auth-scr{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.auth-scr.off{display:none}
+.auth-glow{position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:400px;height:400px;background:radial-gradient(circle,#00F0FF08 0%,transparent 70%);pointer-events:none}
+.auth-box{position:relative;z-index:1;width:100%;max-width:360px}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo h2{font-size:32px;font-weight:800;letter-spacing:6px;background:var(--grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-logo p{font-family:var(--f2);font-size:10px;color:var(--t3);letter-spacing:3px;margin-top:4px}
+.auth-card{background:var(--bg2);border:1px solid var(--brd);border-radius:16px;padding:28px 24px}
+.auth-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--bg);border-radius:8px;padding:3px}
+.auth-tab{flex:1;padding:10px;border:none;border-radius:6px;background:transparent;color:var(--t3);font-size:13px;font-weight:600;letter-spacing:.5px;transition:.2s}
+.auth-tab.on{background:var(--bg3);color:var(--acc)}
+.auth-inp{width:100%;background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:12px 16px;color:var(--t1);font-family:var(--f2);font-size:14px;outline:none;margin-bottom:10px;transition:.2s}
+.auth-inp:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--accd)}
+.auth-btn{width:100%;padding:14px;border:none;border-radius:8px;background:var(--grd);color:#000;font-size:14px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:.2s}
+.auth-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.auth-msg{font-family:var(--f2);font-size:11px;text-align:center;margin-top:12px;min-height:16px}
+/* EXPIRED */
+.exp-scr{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:flex-start;z-index:10000;padding:40px 20px;overflow-y:auto}
+.exp-scr.on{display:flex}
+/* PILLAR ANIMATION */
+.scan-anim{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;margin-bottom:12px;display:none}
+.scan-anim.on{display:block}
+.scan-pillar{display:flex;align-items:center;gap:8px;padding:6px 0;font-family:var(--f2);font-size:11px;color:var(--t3);transition:all .3s}
+.scan-pillar.active{color:var(--acc)}
+.scan-pillar.done{color:var(--grn)}
+.scan-pillar.fail{color:var(--red)}
+.scan-dot{width:8px;height:8px;border-radius:50%;background:var(--t3);transition:all .3s;flex-shrink:0}
+.scan-pillar.active .scan-dot{background:var(--acc);box-shadow:0 0 8px var(--acc);animation:pulse .8s ease-in-out infinite}
+.scan-pillar.done .scan-dot{background:var(--grn)}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
 </style>
 </head>
 <body>
-<div class="shell">
+<!-- AUTH -->
+<div class="auth-scr" id="authScr">
+  <div class="auth-glow"></div>
+  <div class="auth-box">
+    <div class="auth-logo"><h2>SPECTRA</h2><p>AGENTE DE SINAIS IA</p></div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab on" onclick="swAuth('login',this)">ENTRAR</button>
+        <button class="auth-tab" onclick="swAuth('signup',this)">CRIAR CONTA</button>
+      </div>
+      <div id="authLog">
+        <input class="auth-inp" type="email" id="logEmail" placeholder="E-mail">
+        <input class="auth-inp" type="password" id="logPass" placeholder="Senha">
+        <button class="auth-btn" id="btnLog" onclick="doLogin()">ENTRAR</button>
+      </div>
+      <div id="authSig" style="display:none">
+        <input class="auth-inp" type="email" id="sigEmail" placeholder="E-mail">
+        <input class="auth-inp" type="password" id="sigPass" placeholder="Senha (mín. 6)">
+        <input class="auth-inp" type="password" id="sigPass2" placeholder="Confirmar senha">
+        <button class="auth-btn" id="btnSig" onclick="doSignup()">CRIAR CONTA GRÁTIS</button>
+      </div>
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-family:var(--f2);font-size:9px;color:var(--t3)">3 dias grátis • Sem cartão • Cancele quando quiser</div>
+  </div>
+</div>
+
+<!-- EXPIRED -->
+<div class="exp-scr" id="expScr">
+  <div style="font-size:48px;margin-bottom:12px">⏰</div>
+  <div style="font-size:22px;font-weight:800;color:var(--red);letter-spacing:2px;margin-bottom:10px">PERÍODO ENCERRADO</div>
+  <div style="font-family:var(--f2);font-size:12px;color:var(--t2);text-align:center;max-width:340px;line-height:1.7;margin-bottom:6px">Seu teste gratuito de 3 dias terminou. Assine para continuar recebendo sinais.</div>
+  <div id="expInfo" style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-bottom:20px"></div>
+  <div style="background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:18px;width:100%;max-width:340px;margin-bottom:14px">
+    <div style="font-family:var(--f2);font-size:9px;color:var(--acc);letter-spacing:2px;text-align:center;margin-bottom:10px">PLANOS</div>
+    <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;margin-bottom:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--t2)">Mensal</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--grn)">R$ 97</span></div>
+    <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg);border:1px solid var(--amb);border-radius:6px;margin-bottom:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--amb)">Trimestral</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--amb)">R$ 247</span></div>
+    <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg);border:1px solid var(--grn);border-radius:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--grn)">Anual</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--grn)">R$ 797</span></div>
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;width:100%;max-width:340px;margin-bottom:14px;text-align:center">
+    <div style="font-family:var(--f2);font-size:9px;color:var(--acc);letter-spacing:2px;margin-bottom:8px">PIX</div>
+    <div onclick="navigator.clipboard.writeText('62991704188');toast('Chave copiada!','ok')" style="font-family:var(--f2);font-size:15px;color:var(--t1);background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;margin:8px 0;cursor:pointer">62991704188</div>
+    <div style="font-family:var(--f2);font-size:10px;color:var(--t3)">Jamis Costa da Silva</div>
+    <div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:4px">Toque pra copiar • Envie comprovante pelo WhatsApp</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px">
+    <a href="https://wa.me/5562991704188?text=Ol%C3%A1!%20Quero%20assinar%20o%20SPECTRA.%20Segue%20comprovante%20PIX." target="_blank" style="display:block;width:100%;padding:13px;border-radius:8px;text-align:center;text-decoration:none;font-size:13px;font-weight:700;background:var(--grn);color:#000">💬 ASSINAR VIA WHATSAPP</a>
+    <button onclick="doLogout()" style="width:100%;padding:13px;border-radius:8px;background:transparent;border:1px solid var(--brd);color:var(--t3);font-size:13px;cursor:pointer">SAIR</button>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell" id="shell" style="display:none">
   <div class="topbar">
-    <div style="display:flex;align-items:center;gap:10px"><h1>SPECTRA</h1><span style="font-family:var(--f2);font-size:8px;color:var(--acc);padding:2px 6px;background:var(--accd);border:1px solid var(--acc);border-radius:3px">SPEC MIND</span></div>
+    <div style="display:flex;align-items:center;gap:10px"><h1>SPECTRA</h1><span id="planBadge" style="font-family:var(--f2);font-size:8px;color:var(--acc);padding:2px 6px;background:var(--accd);border:1px solid var(--acc);border-radius:3px">SPEC MIND</span></div>
     <div class="topbar-r" id="topInfo">7 Pilares • IA</div>
   </div>
   <div class="content">
@@ -117,6 +201,17 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
       <button class="btn-scan" id="btnScan" onclick="scanAll()" style="font-size:10px;padding:10px;opacity:.7">🔄 ANALISAR TODOS MONITORADOS</button>
       <div style="height:3px;background:var(--bg);border-radius:2px;margin:-6px 0 8px;overflow:hidden"><div id="scanProg" style="height:100%;background:var(--acc);width:0%;transition:width .3s"></div></div>
       <div id="scanSt" style="display:none;text-align:center;padding:8px;font-family:var(--f2);font-size:10px;color:var(--acc);margin-bottom:6px"><div class="ld" style="margin-right:6px;vertical-align:middle"></div><span id="scanTxt">Analisando...</span></div>
+      <!-- PILLAR ANIMATION -->
+      <div class="scan-anim" id="scanAnim">
+        <div style="font-family:var(--f2);font-size:9px;color:var(--acc);letter-spacing:2px;margin-bottom:8px;text-align:center">ANALISANDO 7 PILARES</div>
+        <div class="scan-pillar" id="sp-0"><div class="scan-dot"></div>Elliott Wave</div>
+        <div class="scan-pillar" id="sp-1"><div class="scan-dot"></div>Fibonacci</div>
+        <div class="scan-pillar" id="sp-2"><div class="scan-dot"></div>MACD 12/72/35</div>
+        <div class="scan-pillar" id="sp-3"><div class="scan-dot"></div>Dow Theory</div>
+        <div class="scan-pillar" id="sp-4"><div class="scan-dot"></div>Wyckoff</div>
+        <div class="scan-pillar" id="sp-5"><div class="scan-dot"></div>Gann</div>
+        <div class="scan-pillar" id="sp-6"><div class="scan-dot"></div>Price Action</div>
+      </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;margin-bottom:6px">
         <div class="sec" style="margin:0;flex:1">SINAIS (<span id="sigCount">0</span>)</div>
         <button onclick="clearSigs()" style="padding:3px 10px;background:transparent;border:1px solid var(--brd);border-radius:4px;color:var(--t3);font-family:var(--f2);font-size:8px;cursor:pointer">🗑</button>
@@ -157,7 +252,10 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
     <!-- CONFIG -->
     <div class="page" id="pg-cfg">
       <div class="acc-card">
-        <div style="text-align:center;margin-bottom:16px"><div style="width:50px;height:50px;border-radius:50%;background:var(--grd);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:20px;font-weight:800;color:#000">S</div><div style="font-size:15px;font-weight:600">SPECTRA</div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:4px">Motor SPEC MIND • 7 Pilares</div></div>
+        <div style="text-align:center;margin-bottom:16px"><div style="width:50px;height:50px;border-radius:50%;background:var(--grd);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:20px;font-weight:800;color:#000">S</div><div style="font-size:15px;font-weight:600" id="accEmail">—</div><div id="accBadge" style="margin-top:6px"></div></div>
+        <div class="acc-row"><span>PLANO</span><span id="accPlan">—</span></div>
+        <div class="acc-row"><span>DIAS RESTANTES</span><span id="accDays">—</span></div>
+        <div class="acc-row"><span>CADASTRO</span><span id="accDate">—</span></div>
       </div>
       <div class="sec">MOTOR IA</div>
       <div class="acc-card">
@@ -168,7 +266,10 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
         <div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:6px">Gemini 2.5 Flash • 7 Pilares • Dados Binance em tempo real</div>
       </div>
       <div class="sec">SUPORTE</div>
-      <a href="https://wa.me/5562991704188" target="_blank" style="display:block;width:100%;padding:13px;background:var(--grn);color:#000;border-radius:8px;text-align:center;text-decoration:none;font-size:13px;font-weight:700">💬 WhatsApp</a>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <a href="https://wa.me/5562991704188" target="_blank" style="display:block;width:100%;padding:13px;background:var(--grn);color:#000;border-radius:8px;text-align:center;text-decoration:none;font-size:13px;font-weight:700">💬 WhatsApp</a>
+        <button onclick="doLogout()" style="width:100%;padding:13px;border-radius:8px;background:transparent;border:1px solid var(--brd);color:var(--t3);font-size:13px;cursor:pointer">⏻ SAIR</button>
+      </div>
     </div>
   </div>
   <nav class="nav">
@@ -182,11 +283,101 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 <div class="toast" id="toast"></div>
 <script>
 // ══════════════════════════════════════════════════════════
-// SPECTRA — Motor SPEC MIND v3 (Production)
+// SPECTRA — Motor SPEC MIND v4 (Production + Auth)
 // ══════════════════════════════════════════════════════════
 
 // ── PROTOCOL CHECK ──
-if(location.protocol==='file:'){console.warn('[SPECTRA] ⚠️ Rodando em file:// — APIs podem falhar por CORS. Suba no GitHub Pages ou use um servidor local.');}
+if(location.protocol==='file:')console.warn('[SPECTRA] Rodando em file:// — suba no GitHub Pages pra produção');
+
+// ── SUPABASE ──
+var SB_URL='https://arstesmktmfbibglanfn.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyc3Rlc21rdG1mYmliZ2xhbmZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NzYyMDcsImV4cCI6MjA5MTM1MjIwN30.PLXnXmHQ2T-kz8tlG1X9yepwa5kw5t6J2Xfvtw6IdE4';
+var sb=null,curUser=null,curProfile=null;
+try{sb=window.supabase.createClient(SB_URL,SB_KEY)}catch(e){console.error('[SPECTRA] Supabase init failed:',e)}
+
+// ── AUTH UI ──
+function swAuth(mode,btn){document.querySelectorAll('.auth-tab').forEach(function(b){b.classList.remove('on')});btn.classList.add('on');document.getElementById('authLog').style.display=mode==='login'?'block':'none';document.getElementById('authSig').style.display=mode==='signup'?'block':'none';document.getElementById('authMsg').textContent='';}
+function aMsg(m,err){var e=document.getElementById('authMsg');e.textContent=m;e.style.color=err?'var(--red)':'var(--grn)';}
+
+async function doLogin(){
+  var email=document.getElementById('logEmail').value.trim(),pass=document.getElementById('logPass').value;
+  if(!email||!pass){aMsg('Preencha os campos',true);return;}
+  document.getElementById('btnLog').textContent='Entrando...';
+  var r=await sb.auth.signInWithPassword({email:email,password:pass});
+  document.getElementById('btnLog').textContent='ENTRAR';
+  if(r.error){aMsg(r.error.message==='Invalid login credentials'?'E-mail ou senha incorretos':r.error.message,true);return;}
+  curUser=r.data.user;checkAccess();
+}
+async function doSignup(){
+  var email=document.getElementById('sigEmail').value.trim(),pass=document.getElementById('sigPass').value,pass2=document.getElementById('sigPass2').value;
+  if(!email||!pass||!pass2){aMsg('Preencha todos',true);return;}
+  if(pass.length<6){aMsg('Senha mínimo 6 caracteres',true);return;}
+  if(pass!==pass2){aMsg('Senhas não coincidem',true);return;}
+  document.getElementById('btnSig').textContent='Criando...';
+  var r=await sb.auth.signUp({email:email,password:pass});
+  document.getElementById('btnSig').textContent='CRIAR CONTA GRÁTIS';
+  if(r.error){aMsg(r.error.message,true);return;}
+  aMsg('Conta criada! Entrando...',false);
+  var r2=await sb.auth.signInWithPassword({email:email,password:pass});
+  if(r2.error){aMsg('Conta criada. Faça login.',false);swAuth('login',document.querySelector('.auth-tab'));return;}
+  curUser=r2.data.user;checkAccess();
+}
+async function doLogout(){if(sb)await sb.auth.signOut();curUser=null;curProfile=null;showAuth();}
+
+async function checkAccess(){
+  if(!curUser){showAuth();return;}
+  var r=await sb.from('profiles').select('*').eq('id',curUser.id).single();
+  if(r.error){await new Promise(function(ok){setTimeout(ok,2000)});r=await sb.from('profiles').select('*').eq('id',curUser.id).single();}
+  if(r.error||!r.data){aMsg('Erro ao carregar perfil. Tente novamente.',true);return;}
+  curProfile=r.data;
+  if(curProfile.subscription_status==='premium'){showApp();return;}
+  var start=new Date(curProfile.trial_start);
+  var end=new Date(start.getTime()+curProfile.trial_days*86400000);
+  if(new Date()>end){sb.from('profiles').update({subscription_status:'expired'}).eq('id',curUser.id);showExpired(end);return;}
+  showApp();
+}
+
+function showAuth(){document.getElementById('authScr').classList.remove('off');document.getElementById('shell').style.display='none';document.getElementById('expScr').classList.remove('on');}
+function showExpired(end){document.getElementById('authScr').classList.add('off');document.getElementById('shell').style.display='none';document.getElementById('expScr').classList.add('on');document.getElementById('expInfo').textContent='Trial encerrou em '+end.toLocaleDateString('pt-BR');}
+function showApp(){
+  document.getElementById('authScr').classList.add('off');document.getElementById('expScr').classList.remove('on');document.getElementById('shell').style.display='flex';
+  if(curProfile){
+    var isPrem=curProfile.subscription_status==='premium';
+    var badge=document.getElementById('planBadge');if(badge){badge.textContent=isPrem?'PREMIUM':'TRIAL';badge.style.background=isPrem?'var(--grnd)':'var(--accd)';badge.style.borderColor=isPrem?'var(--grn)':'var(--acc)';badge.style.color=isPrem?'var(--grn)':'var(--acc)';}
+    if(!isPrem){var d=Math.max(0,Math.ceil((new Date(new Date(curProfile.trial_start).getTime()+curProfile.trial_days*86400000).getTime()-Date.now())/86400000));document.getElementById('topInfo').textContent=d+'d restantes';}
+    else document.getElementById('topInfo').textContent='∞';
+    var ae=document.getElementById('accEmail');if(ae)ae.textContent=curProfile.email;
+    var ab=document.getElementById('accBadge');if(ab)ab.innerHTML=isPrem?'<span style="font-family:var(--f2);font-size:10px;padding:3px 10px;border-radius:4px;background:var(--grnd);color:var(--grn);border:1px solid var(--grn)">★ PREMIUM</span>':'<span style="font-family:var(--f2);font-size:10px;padding:3px 10px;border-radius:4px;background:var(--accd);color:var(--acc);border:1px solid var(--acc)">TRIAL</span>';
+    var ap=document.getElementById('accPlan');if(ap)ap.textContent=isPrem?'Premium':'Trial (3 dias)';
+    var ad=document.getElementById('accDays');if(ad)ad.textContent=isPrem?'Ilimitado':Math.max(0,Math.ceil((new Date(new Date(curProfile.trial_start).getTime()+curProfile.trial_days*86400000).getTime()-Date.now())/86400000))+' dias';
+    var ac=document.getElementById('accDate');if(ac)ac.textContent=new Date(curProfile.created_at).toLocaleDateString('pt-BR');
+  }
+  fetchTicker();filterPairs();renderSignals();updateDash();
+}
+
+// Init auth
+(async function(){try{if(!sb)return;var s=await sb.auth.getSession();if(s.data.session){curUser=s.data.session.user;checkAccess();}sb.auth.onAuthStateChange(function(ev,s){if(s){curUser=s.user;}else{curUser=null;showAuth();}});}catch(e){console.error('[SPECTRA] Auth init error:',e)}})();
+
+// ── PILLAR ANIMATION ──
+var pillarNames=['Elliott Wave','Fibonacci','MACD 12/72/35','Dow Theory','Wyckoff','Gann','Price Action'];
+var scanAnimTimer=null;
+function startPillarAnim(){
+  var el=document.getElementById('scanAnim');if(!el)return;
+  el.classList.add('on');
+  for(var i=0;i<7;i++){var p=document.getElementById('sp-'+i);if(p){p.className='scan-pillar';p.innerHTML='<div class="scan-dot"></div>'+pillarNames[i];}}
+  var idx=0;
+  if(scanAnimTimer)clearInterval(scanAnimTimer);
+  scanAnimTimer=setInterval(function(){
+    for(var j=0;j<7;j++){var p=document.getElementById('sp-'+j);if(p){if(j<idx)p.className='scan-pillar done';else if(j===idx)p.className='scan-pillar active';else p.className='scan-pillar';}}
+    idx++;if(idx>7){idx=0;}
+  },600);
+}
+function stopPillarAnim(result){
+  if(scanAnimTimer){clearInterval(scanAnimTimer);scanAnimTimer=null;}
+  // Mark all as done
+  for(var i=0;i<7;i++){var p=document.getElementById('sp-'+i);if(p)p.className='scan-pillar done';}
+  setTimeout(function(){var el=document.getElementById('scanAnim');if(el)el.classList.remove('on')},1500);
+}
 
 // ── CONFIG ──
 var PROXIES=['https://especulador-specmind.jamiscosta81.workers.dev','https://especulador-specmind.jamiscosta81.workers.dev'];
@@ -195,10 +386,6 @@ var gemKey=localStorage.getItem('GEMINI_API_KEY')||'';
 var signals=JSON.parse(localStorage.getItem('spectra_sig')||'[]');
 var monitored=JSON.parse(localStorage.getItem('spectra_mon')||'["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT"]');
 var isScanning=false,isAnalyzing=false,aFilt='ALL';
-
-// ── GEMINI KEY UI ──
-function saveGemKey(){var k=document.getElementById('gemKey').value.trim();if(!k){toast('Cole a chave','err');return;}localStorage.setItem('GEMINI_API_KEY',k);gemKey=k;document.getElementById('keyStatus').innerHTML='<span style="color:var(--grn)">✓ Chave salva — API direta ativa</span>';toast('Chave salva!','ok');}
-function clearGemKey(){localStorage.removeItem('GEMINI_API_KEY');gemKey='';document.getElementById('gemKey').value='';document.getElementById('keyStatus').textContent='Usando proxies';toast('Removida','inf');}
 
 // ── GEMINI API CALL (dual mode) ──
 async function callGemini(systemPrompt,userText){
@@ -563,18 +750,20 @@ async function analisarUm(){
   console.log('[SPECTRA] ══════ ANALISANDO:',pair,'══════');
   try{
     document.getElementById('scanTxt').textContent='Binance: puxando 700 candles...';
+    startPillarAnim();
     var mkt=await buildMktStr(pair);
     document.getElementById('scanTxt').textContent='SPEC MIND: analisando '+pair.replace('USDT','')+'...';
     console.log('[SPECTRA] Chamando callGemini...');
     var text=await callGemini(SYSTEM_PROMPT,mkt);
     console.log('[SPECTRA] Resposta recebida, extraindo JSON...');
     document.getElementById('scanTxt').textContent='Processando resultado...';
+    stopPillarAnim();
     var raw=exJSON(text);
     if(!raw){console.error('[SPECTRA] exJSON retornou null. Texto:',text.substring(0,500));toast('IA respondeu mas JSON inválido — veja console','err');isAnalyzing=false;st.style.display='none';btn.disabled=false;btn.textContent='⚡ ANALISAR';return;}
     var sig=mapSignal(raw,pair);
     if(sig){sig.time=new Date().toISOString();signals.unshift(sig);signals=signals.slice(0,100);localStorage.setItem('spectra_sig',JSON.stringify(signals));toast(pair.replace('USDT','')+' → '+(sig.direcao||'OK')+' '+(sig.estrelas||''),'ok');alertBeep(sig);}
     else{toast('Mapeamento falhou — veja console','err');}
-  }catch(e){console.error('[SPECTRA] analisarUm ERRO:',e);toast('Erro: '+e.message,'err');}
+  }catch(e){stopPillarAnim();console.error('[SPECTRA] analisarUm ERRO:',e);toast('Erro: '+e.message,'err');}
   st.style.display='none';btn.disabled=false;btn.textContent='⚡ ANALISAR';
   isAnalyzing=false;renderSignals();updateDash();
 }
@@ -658,7 +847,7 @@ function beep(f,d){var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.c
 
 // ── INIT ──
 console.log('[SPECTRA] Init — signals:',signals.length,'monitored:',monitored.length,'mode:'+(gemKey?'DIRECT':'PROXY'));
-renderSignals();updateDash();popPairSel();filterPairs();
+popPairSel();
 
 </script>
 </body>
