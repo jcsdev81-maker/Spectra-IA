@@ -57,9 +57,6 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .str-label{font-family:var(--f2);font-size:8px;color:var(--t3);letter-spacing:1px}
 .sec{font-family:var(--f2);font-size:9px;color:var(--t3);letter-spacing:2px;margin:18px 0 10px;display:flex;align-items:center;gap:8px}
 .sec::after{content:'';flex:1;height:1px;background:var(--brd)}
-.btn-scan{width:100%;padding:14px;background:var(--accd);border:1px solid var(--acc);border-radius:10px;color:var(--acc);font-family:var(--f2);font-size:12px;font-weight:600;letter-spacing:1px;margin-bottom:14px}
-.btn-scan:hover{background:var(--acc);color:#000}
-.btn-scan:disabled{opacity:.4;cursor:not-allowed}
 .empty{text-align:center;padding:40px 20px;color:var(--t3)}
 .empty-icon{font-size:40px;margin-bottom:10px;opacity:.4}
 .empty-text{font-size:13px;line-height:1.6}
@@ -336,9 +333,9 @@ function aMsg(m,err){var e=document.getElementById('authMsg');e.textContent=m;e.
 async function doLogin(){
   var email=document.getElementById('logEmail').value.trim(),pass=document.getElementById('logPass').value;
   if(!email||!pass){aMsg('Preencha os campos',true);return;}
-  document.getElementById('btnLog').textContent='Entrando...';
+  document.getElementById('btnLog').textContent='Entrando...';document.getElementById('btnLog').disabled=true;
   var r=await sb.auth.signInWithPassword({email:email,password:pass});
-  document.getElementById('btnLog').textContent='ENTRAR';
+  document.getElementById('btnLog').textContent='ENTRAR';document.getElementById('btnLog').disabled=false;
   if(r.error){aMsg(r.error.message==='Invalid login credentials'?'E-mail ou senha incorretos':r.error.message,true);return;}
   curUser=r.data.user;checkAccess();
 }
@@ -347,16 +344,16 @@ async function doSignup(){
   if(!email||!pass||!pass2){aMsg('Preencha todos',true);return;}
   if(pass.length<6){aMsg('Senha mínimo 6 caracteres',true);return;}
   if(pass!==pass2){aMsg('Senhas não coincidem',true);return;}
-  document.getElementById('btnSig').textContent='Criando...';
+  document.getElementById('btnSig').textContent='Criando...';document.getElementById('btnSig').disabled=true;
   var r=await sb.auth.signUp({email:email,password:pass});
-  document.getElementById('btnSig').textContent='CRIAR CONTA GRÁTIS';
+  document.getElementById('btnSig').textContent='CRIAR CONTA GRÁTIS';document.getElementById('btnSig').disabled=false;
   if(r.error){aMsg(r.error.message,true);return;}
   aMsg('Conta criada! Entrando...',false);
   var r2=await sb.auth.signInWithPassword({email:email,password:pass});
   if(r2.error){aMsg('Conta criada. Faça login.',false);swAuth('login',document.querySelector('.auth-tab'));return;}
   curUser=r2.data.user;checkAccess();
 }
-async function doLogout(){if(sb)await sb.auth.signOut();curUser=null;curProfile=null;signals=[];monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];showAuth();}
+async function doLogout(){stopAutoScan();if(sb)await sb.auth.signOut();curUser=null;curProfile=null;signals=[];monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];showAuth();}
 
 async function checkAccess(){
   if(!curUser){showAuth();return;}
@@ -389,6 +386,11 @@ function showApp(){
     // Telegram
     var tgIn=document.getElementById('tgChatInput');
     if(tgIn&&curProfile.telegram_chat_id){tgIn.value=curProfile.telegram_chat_id;document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Configurado</span>';}
+    // Auto-scan restore
+    if(curProfile.auto_scan){
+      var tgBtn=document.getElementById('tgAutoScan');
+      if(tgBtn&&!tgBtn.classList.contains('on')){tgBtn.classList.add('on');autoScanOn=true;startAutoScan();}
+    }
   }
   fetchTicker();filterPairs();renderSignals();updateDash();
 }
@@ -776,8 +778,10 @@ function mapSignal(raw,pair){
 // ── BUILD MARKET DATA STRING ──
 async function buildMktStr(sym){
   console.log('[SPECTRA] buildMktStr:',sym);
-  var d=await fetchMarketData(sym,'240');
-  console.log('[SPECTRA] fetchMarketData OK — preço:',d.price);
+  try{
+    var d=await fetchMarketData(sym,'240');
+    if(!d||!d.price)throw new Error('Sem dados da Binance para '+sym);
+    console.log('[SPECTRA] fetchMarketData OK — preço:',d.price);
   return sym+' 4H|Preço:'+d.price
     +'|GATE D:'+d.macdGate+' Line='+d.macdLineD+' Sig='+d.signalLineD+' Hist='+d.histD+'('+d.histTrendD+') Cross:'+d.macdCrossD+' Zero:'+d.macdZeroD
     +'|★FalhaD:'+d.macdFailD+' '+d.macdFailDescD+' Zona:'+d.macdFailZonaD
@@ -788,6 +792,7 @@ async function buildMktStr(sym){
     +'|FIBO:'+d.fibH+'→'+d.fibL+' .618='+d.f618+' .786='+d.f786+' GZ:'+d.gz
     +'|VOL:'+d.volStatus+'|CANDLE:'+d.candle
     +'|JSON obrigatório. Dados reais Binance.';
+  }catch(e){console.error('[SPECTRA] buildMktStr erro:',e);throw new Error('Binance: '+e.message);}
 }
 
 // ── ANALISAR UM PAR ──
@@ -931,7 +936,7 @@ function startCountdown(){
 }
 
 async function runAutoScan(){
-  if(isAnalyzing)return;
+  if(isAnalyzing){autoLog('Análise manual em andamento — scan adiado');return;}
   autoLog('Iniciando scan automático...');
   var found=0;
   for(var i=0;i<monitored.length;i++){
