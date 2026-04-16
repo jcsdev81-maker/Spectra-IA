@@ -347,6 +347,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
         <div style="display:flex;gap:6px">
           <button onclick="saveTgChat()" style="flex:1;padding:10px;border:none;border-radius:6px;background:var(--grn);color:#000;font-family:var(--f2);font-size:11px;font-weight:600;cursor:pointer">SALVAR</button>
           <button onclick="testTgChat()" style="padding:10px 14px;border:1px solid var(--acc);border-radius:6px;background:var(--accd);color:var(--acc);font-family:var(--f2);font-size:11px;cursor:pointer">TESTAR</button>
+          <button onclick="clearTgChat()" style="padding:10px 12px;border:1px solid var(--red);border-radius:6px;background:transparent;color:var(--red);font-family:var(--f2);font-size:11px;cursor:pointer">✕</button>
         </div>
         <div id="tgStatus" style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:8px;text-align:center"></div>
       </div>
@@ -446,9 +447,14 @@ function showApp(){
     var ap=document.getElementById('accPlan');if(ap)ap.textContent=isPrem?'Premium':'Trial (3 dias)';
     var ad=document.getElementById('accDays');if(ad)ad.textContent=isPrem?'Ilimitado':Math.max(0,Math.ceil((new Date(new Date(curProfile.trial_start).getTime()+curProfile.trial_days*86400000).getTime()-Date.now())/86400000))+' dias';
     var ac=document.getElementById('accDate');if(ac)ac.textContent=new Date(curProfile.created_at).toLocaleDateString('pt-BR');
-    // Telegram
+    // Telegram — load from Supabase OR localStorage fallback
     var tgIn=document.getElementById('tgChatInput');
-    if(tgIn&&curProfile.telegram_chat_id){tgIn.value=curProfile.telegram_chat_id;document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Configurado</span>';}
+    var savedChatId=curProfile.telegram_chat_id||localStorage.getItem(uKey('tg_chat_id'));
+    if(tgIn&&savedChatId){
+      tgIn.value=savedChatId;
+      if(curProfile)curProfile.telegram_chat_id=savedChatId;
+      document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Configurado</span>';
+    }
     // Auto-scan restore
     var wasAutoOn=curProfile.auto_scan||localStorage.getItem(uKey('spectra_autoscan'))==='1';
     var savedInterval=localStorage.getItem(uKey('spectra_interval'));
@@ -1203,11 +1209,32 @@ function startAutoScan(){
   var st=document.getElementById('autoStatus');
   st.style.color='var(--grn)';
   autoLog('Auto-scan ativado — intervalo: '+(autoIntervalMin>=60?(autoIntervalMin/60)+'h':autoIntervalMin+'min'));
-  // Run first scan now
-  runAutoScan();
-  // Schedule next
-  autoScanTimer=setInterval(runAutoScan,autoIntervalMin*60*1000);
-  startCountdown();
+  
+  // Check timestamp of last scan
+  var lastScan=parseInt(localStorage.getItem(uKey('spectra_last_scan'))||'0');
+  var intervalMs=autoIntervalMin*60*1000;
+  var elapsed=Date.now()-lastScan;
+  
+  if(lastScan===0||elapsed>=intervalMs){
+    // First scan ever OR interval already elapsed → run now
+    autoLog('Executando scan (intervalo decorrido)');
+    runAutoScan();
+    autoScanTimer=setInterval(runAutoScan,intervalMs);
+    startCountdown(intervalMs);
+  }else{
+    // Wait remaining time, then start interval
+    var remaining=intervalMs-elapsed;
+    var minutes=Math.ceil(remaining/60000);
+    autoLog('Próximo scan em ~'+minutes+'min (último: '+new Date(lastScan).toLocaleTimeString('pt-BR')+')');
+    setTimeout(function(){
+      if(autoScanOn){
+        runAutoScan();
+        autoScanTimer=setInterval(runAutoScan,intervalMs);
+        startCountdown(intervalMs);
+      }
+    },remaining);
+    startCountdown(remaining);
+  }
 }
 
 function stopAutoScan(){
@@ -1219,12 +1246,13 @@ function stopAutoScan(){
   autoLog('Auto-scan desativado');
 }
 
-function startCountdown(){
+function startCountdown(initialMs){
   if(autoCountdown)clearInterval(autoCountdown);
-  var next=Date.now()+autoIntervalMin*60*1000;
+  var intervalMs=autoIntervalMin*60*1000;
+  var next=Date.now()+(initialMs||intervalMs);
   autoCountdown=setInterval(function(){
     var left=Math.max(0,next-Date.now());
-    if(left<=0){next=Date.now()+autoIntervalMin*60*1000;}
+    if(left<=0){next=Date.now()+intervalMs;}
     var h=Math.floor(left/3600000),m=Math.floor((left%3600000)/60000),s=Math.floor((left%60000)/1000);
     var st=document.getElementById('autoStatus');
     if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — próximo scan: '+h+'h'+String(m).padStart(2,'0')+'m'+String(s).padStart(2,'0')+'s';
@@ -1233,6 +1261,8 @@ function startCountdown(){
 
 async function runAutoScan(){
   if(isAnalyzing){autoLog('Análise manual em andamento — scan adiado');return;}
+  // Save timestamp BEFORE scan starts (so timer respects even crashes)
+  try{localStorage.setItem(uKey('spectra_last_scan'),Date.now().toString());}catch(e){}
   autoLog('Scan automático: '+monitored.length+' pares');
   var found=0,operaveis=[];
   for(var i=0;i<monitored.length;i++){
@@ -1293,13 +1323,32 @@ function autoLog(msg){
 function saveTgChat(){
   var chatId=document.getElementById('tgChatInput').value.trim();
   if(!chatId){toast('Cole seu Chat ID','err');return;}
+  // Validate chat ID is numeric (Telegram chat IDs are numbers)
+  if(!/^-?\d+$/.test(chatId)){toast('Chat ID deve ser numérico','err');return;}
+  
+  // 1. Save to localStorage IMMEDIATELY (always works)
+  try{localStorage.setItem(uKey('tg_chat_id'),chatId);}catch(e){}
+  if(curProfile)curProfile.telegram_chat_id=chatId;
+  document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Chat ID salvo</span>';
+  toast('Telegram configurado!','ok');
+  
+  // 2. Try Supabase (best effort, doesn't block)
   if(sb&&curUser){
     sb.from('profiles').update({telegram_chat_id:chatId}).eq('id',curUser.id).then(function(r){
-      if(curProfile)curProfile.telegram_chat_id=chatId;
-      document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Chat ID salvo</span>';
-      toast('Telegram configurado!','ok');
-    });
-  }else{toast('Faça login primeiro','err');}
+      if(r.error){console.warn('[SPECTRA] Supabase save failed (using localStorage):',r.error.message);}
+    }).catch(function(e){console.warn('[SPECTRA] Supabase error:',e.message);});
+  }
+}
+function clearTgChat(){
+  if(!confirm('Remover Chat ID do Telegram?'))return;
+  try{localStorage.removeItem(uKey('tg_chat_id'));}catch(e){}
+  if(curProfile)curProfile.telegram_chat_id=null;
+  document.getElementById('tgChatInput').value='';
+  document.getElementById('tgStatus').innerHTML='<span style="color:var(--t3)">Chat ID removido</span>';
+  if(sb&&curUser){
+    sb.from('profiles').update({telegram_chat_id:null}).eq('id',curUser.id).catch(function(){});
+  }
+  toast('Chat ID removido','inf');
 }
 async function testTgChat(){
   var chatId=document.getElementById('tgChatInput').value.trim();
