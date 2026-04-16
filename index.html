@@ -1613,12 +1613,21 @@ function updateAutoInterval(){
 function startAutoScan(){
   autoScanOn=true;
   var st=document.getElementById('autoStatus');
-  st.style.color='var(--grn)';
+  if(st)st.style.color='var(--grn)';
   autoLog('Auto-scan ativado — intervalo: '+(autoIntervalMin>=60?(autoIntervalMin/60)+'h':autoIntervalMin+'min'));
-  // Run first scan now
-  runAutoScan();
-  // Schedule next
-  autoScanTimer=setInterval(runAutoScan,autoIntervalMin*60*1000);
+  // Checa último scan: só dispara se já passou o intervalo
+  var lastScan=parseInt(localStorage.getItem(uKey('last_scan'))||'0');
+  var elapsed=Date.now()-lastScan;
+  var intervalMs=autoIntervalMin*60*1000;
+  if(elapsed>=intervalMs){
+    autoLog('Executando scan (último foi há '+Math.round(elapsed/60000)+' min)');
+    runAutoScan();
+  }else{
+    var left=Math.round((intervalMs-elapsed)/60000);
+    autoLog('Aguardando próximo scan em '+left+' min (Worker roda em background)');
+  }
+  // Agenda o próximo
+  autoScanTimer=setInterval(runAutoScan,intervalMs);
   startCountdown();
 }
 
@@ -1645,6 +1654,8 @@ function startCountdown(){
 
 async function runAutoScan(){
   if(isAnalyzing){autoLog('Análise manual em andamento — scan adiado');return;}
+  // Registra timestamp IMEDIATAMENTE (evita duplicar se o trader mudar de aba no meio)
+  localStorage.setItem(uKey('last_scan'),Date.now().toString());
   autoLog('Scan automático: '+monitored.length+' pares');
   var found=0,operaveis=[];
   for(var i=0;i<monitored.length;i++){
