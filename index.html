@@ -981,7 +981,15 @@ FORMATO: Responda SOMENTE com JSON puro. Sem texto antes ou depois.
 
 Modelo: {"ativo":"PAR","direcao_dominante":"COMPRADOR|VENDEDOR|LATERAL","probabilidades":{"comprador":0,"vendedor":0,"lateral":0},"confluencia":{"total_favoraveis":0,"total_pilares":7,"classificacao":"★★(N)","pilares":{"elliott":{"score":0,"direcao":"","analise":""},"fibonacci":{"score":0,"direcao":"","analise":""},"macd_12_72":{"score":0,"direcao":"","analise":""},"dow":{"score":0,"direcao":"","analise":""},"wyckoff":{"score":0,"direcao":"","analise":""},"gann":{"score":0,"direcao":"","analise":""},"price_action":{"score":0,"direcao":"","analise":""}}},"indicadores_complementares":{"macd_falha_cruzamento":{"tipo":"","descricao":"","confirmacao":""},"dema_72":{"valor":0,"status":"","confirmacao":""}},"gestao_risco":{"entrada_sugerida":0,"stop_loss":0,"alvo_1":0,"alvo_2":0,"alvo_3":0,"rr_ratio":"","valido":true},"veredicto":"OPERAR|AGUARDAR","narrativa":"Estrutura. Confluência. Regiões de alvo com extensão Fibo LOG. Timing."}
 
-REGRAS INVIOLÁVEIS: 4H com confluência ★★★+ pode antecipar entrada (R:R≥3:1). Diário confirmando = amplia alvos (R:R 6:1+). Só GoldenZone LOG. Stop obrigatório e estrutural. ≤2 pilares=NÃO OPERAR. ★★★Falha de cruzamento MACD + absorção = sinal prioritário.`;
+REGRAS INVIOLÁVEIS:
+- Para LONG: Se GZ nos dados = "NÃO" (preço acima da zona) → veredicto OBRIGATÓRIO "AGUARDAR". Sem entrada LONG fora da Golden Zone.
+- Para SHORT: GZ é calculado do swing H→L (retração descendente). SHORT usa resistência como referência, não a mesma GZ. Valide se stop está ACIMA da entrada e TPs ABAIXO da entrada.
+- 4H com confluência ★★★+ pode antecipar entrada SOMENTE se preço está DENTRO da zona de valor (R:R≥3:1).
+- Diário confirmando = amplia alvos (R:R 6:1+).
+- Stop obrigatório e estrutural.
+- ≤2 pilares=NÃO OPERAR.
+- ★★★Falha de cruzamento MACD + absorção = sinal prioritário.
+- Se a narrativa mencionar "aguardar", "esperar pullback", "timing passou" → veredicto DEVE ser AGUARDAR, NUNCA OPERAR.`;
 
 
 // ── PARES ──
@@ -1073,6 +1081,26 @@ function mapSignal(raw,pair){
       raw.veredicto='AGUARDAR';
       raw.narrativa=(raw.narrativa||'')+' Dados incompletos — aguardar setup válido.';
     }
+    // ── BUG 2: ≤2 pilares = AGUARDAR (regra inviolável) ──
+    if(direcao!=='AGUARDAR'&&fav<=2){
+      console.log('[SPECTRA] Só '+fav+' pilares — forçando AGUARDAR');
+      direcao='AGUARDAR';
+      raw.veredicto='AGUARDAR';
+      raw.narrativa=(raw.narrativa||'')+' Apenas '+fav+' pilares — confluência insuficiente.';
+    }
+    // ── BUG 3: SHORT com TP acima da entrada = inválido (e vice-versa) ──
+    if(direcao==='SHORT'&&tp1>0&&entrada>0&&tp1>entrada){
+      console.log('[SPECTRA] SHORT com TP1 acima da entrada — invertendo TP ou forçando AGUARDAR');
+      direcao='AGUARDAR';
+      raw.veredicto='AGUARDAR';
+      raw.narrativa=(raw.narrativa||'')+' Dados inconsistentes (TP acima da entrada em SHORT).';
+    }
+    if(direcao==='LONG'&&tp1>0&&entrada>0&&tp1<entrada){
+      console.log('[SPECTRA] LONG com TP1 abaixo da entrada — forçando AGUARDAR');
+      direcao='AGUARDAR';
+      raw.veredicto='AGUARDAR';
+      raw.narrativa=(raw.narrativa||'')+' Dados inconsistentes (TP abaixo da entrada em LONG).';
+    }
     // ── R:R calculado LOCALMENTE (matemática pura, não confia na IA) ──
     var rrStr=rrStrRaw;
     var rrNum=0;
@@ -1097,6 +1125,7 @@ function mapSignal(raw,pair){
 // ── BUILD MARKET DATA STRING ──
 var lastExtLevels=null;
 var lastGoldenZone=null;
+var lastGZstatus='NÃO';
 async function buildMktStr(sym){
   console.log('[SPECTRA] buildMktStr:',sym);
   try{
@@ -1104,6 +1133,7 @@ async function buildMktStr(sym){
     lastExtLevels={e100:parseFloat(d.e100),e1272:parseFloat(d.e1272),e1414:parseFloat(d.e1414),e1618:parseFloat(d.e1618),e2270:parseFloat(d.e2270),e2414:parseFloat(d.e2414)};
     // Golden Zone = 0.618-0.786 (região de valor pra entrada)
     lastGoldenZone={low:parseFloat(d.f786),high:parseFloat(d.f618)};
+    lastGZstatus=d.gz||'NÃO';
     if(!d||!d.price)throw new Error('Sem dados da Binance para '+sym);
     console.log('[SPECTRA] fetchMarketData OK — preço:',d.price);
   return sym+' 4H|Preço:'+d.price
@@ -1150,6 +1180,39 @@ async function analisarUm(){
     if(sig){
       sig.id=genSigId();
       sig.time=new Date().toISOString();sig.status='open';
+      // Captura preço REAL no momento da criação
+      sig.priceAtCreation=lastGoldenZone?parseFloat(document.querySelector('#mTicker')?0:0):0;
+      try{var snap=await fetch('https://api.binance.com/api/v3/ticker/price?symbol='+pair);var sj=await snap.json();sig.priceAtCreation=parseFloat(sj.price)||0;}catch(e){}
+
+      // ── FIX 1: GZ check SÓ para LONG (para SHORT, GZ=NÃO é esperado) ──
+      if(sig.direcao==='LONG'&&lastGZstatus.indexOf('NÃO')>-1){
+        console.log('[SPECTRA] LONG com GZ='+lastGZstatus+' → forçando AGUARDAR');
+        sig.direcao='AGUARDAR';sig.veredicto='AGUARDAR';
+        sig.motivo=(sig.motivo||'')+' Preço acima da Golden Zone — aguardar pullback.';
+      }
+
+      // ── FIX 2: narrativa contradiz veredicto (strings literais, não regex) ──
+      if(sig.direcao!=='AGUARDAR'){
+        var narr=(sig.motivo||'').toLowerCase();
+        if(narr.indexOf('aguardar')>-1||narr.indexOf('esperar pullback')>-1||narr.indexOf('timing passou')>-1||narr.indexOf('timing ideal')>-1&&narr.indexOf('passou')>-1||narr.indexOf('deslocado da zona')>-1||narr.indexOf('fora da zona de valor')>-1){
+          console.log('[SPECTRA] Narrativa contradiz veredicto → forçando AGUARDAR');
+          sig.direcao='AGUARDAR';sig.veredicto='AGUARDAR';
+        }
+      }
+
+      // ── FIX 3: preço atual já passou do TP = sinal stale, não monitora ──
+      if(sig.direcao!=='AGUARDAR'&&sig.priceAtCreation>0){
+        var pNow=sig.priceAtCreation;
+        if(sig.direcao==='LONG'&&sig.tp1>0&&pNow>=sig.tp1){
+          console.log('[SPECTRA] Preço '+pNow+' já acima TP1 '+sig.tp1+' → sinal stale');
+          sig.status='stale';sig.motivo=(sig.motivo||'')+' Preço já ultrapassou TP1 — sinal informativo apenas.';
+        }
+        if(sig.direcao==='SHORT'&&sig.tp1>0&&pNow<=sig.tp1){
+          console.log('[SPECTRA] Preço '+pNow+' já abaixo TP1 '+sig.tp1+' → sinal stale');
+          sig.status='stale';sig.motivo=(sig.motivo||'')+' Preço já ultrapassou TP1 — sinal informativo apenas.';
+        }
+      }
+
       if(lastExtLevels){
         sig.regTP1=[lastExtLevels.e100,lastExtLevels.e1272];
         sig.regTP2=[lastExtLevels.e1414,lastExtLevels.e1618];
@@ -1159,8 +1222,8 @@ async function analisarUm(){
         sig.regEntrada=[lastGoldenZone.low,lastGoldenZone.high];
       }
       signals.unshift(sig);signals=signals.slice(0,100);saveSigs();
-      var msg=pair.replace('USDT','')+' → '+(sig.direcao||'OK')+' '+(sig.estrelas||'');
-      toast(msg,'ok');alertBeep(sig);
+      var msg=pair.replace('USDT','')+' → '+(sig.direcao||'OK')+(sig.status==='stale'?' (informativo)':'')+' '+(sig.estrelas||'');
+      toast(msg,sig.status==='stale'?'inf':'ok');alertBeep(sig);
     }else{toast('Par não reconhecido pela IA — tente outro','err');}
   }catch(e){
     stopPillarAnim();
@@ -1233,7 +1296,7 @@ function updateDash(){
   if(!document.getElementById('dWR'))return;
   // Classificação dos sinais
   var ops=signals.filter(function(s){return s.direcao==='LONG'||s.direcao==='SHORT'});
-  var wins=ops.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'});
+  var wins=ops.filter(function(s){return s.status==='tp3'});
   var losses=ops.filter(function(s){return s.status==='sl'});
   var open=ops.filter(function(s){return!s.status||s.status==='open'});
   var closed=wins.length+losses.length;
@@ -1351,17 +1414,23 @@ function renderOpenSignals(open){
   open.slice(0,5).forEach(function(s){
     var dir=(s.direcao||'').toUpperCase();
     var dirCol=dir==='LONG'?'var(--grn)':'var(--red)';
+    // Progresso TP
+    var prog=(s.tp1_hit?'✅':'⬜')+(s.tp2_hit?'✅':'⬜')+(s.tp3_hit?'✅':'⬜');
+    // Distância ao próximo milestone
     var prox='—';var proxCol='var(--t3)';
-    if(s.livePrice&&s.entrada&&s.stop&&s.tp1){
-      // Distância até stop e até TP mais próximo
+    if(s.livePrice&&s.entrada&&s.stop){
       var distSL=Math.abs((s.livePrice-s.stop)/s.livePrice*100);
-      var distTP=Math.abs((s.tp1-s.livePrice)/s.livePrice*100);
-      if(distSL<distTP){prox='⚠ '+distSL.toFixed(1)+'% do stop';proxCol='var(--red)';}
-      else{prox='→ '+distTP.toFixed(1)+'% do TP1';proxCol='var(--grn)';}
+      var nextTP=!s.tp1_hit?s.tp1:!s.tp2_hit?s.tp2:s.tp3;
+      if(nextTP){
+        var distTP=Math.abs((nextTP-s.livePrice)/s.livePrice*100);
+        if(distSL<distTP){prox='⚠ '+distSL.toFixed(1)+'% do stop';proxCol='var(--red)';}
+        else{var nextLabel=!s.tp1_hit?'TP1':!s.tp2_hit?'TP2':'TP3';prox='→ '+distTP.toFixed(1)+'% do '+nextLabel;proxCol='var(--grn)';}
+      }
     }
-    h+='<div style="background:var(--bg2);border:1px solid var(--brd);border-left:3px solid '+dirCol+';border-radius:6px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">';
-    h+='<div><div style="font-family:var(--f2);font-size:13px;font-weight:700">'+(s.par||'').replace('USDT','')+' <span style="color:'+dirCol+';font-size:10px;margin-left:4px">'+dir+'</span></div><div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:2px">R:R '+(s.rr||'—')+' • '+(s.estrelas||'')+'</div></div>';
-    h+='<div style="text-align:right"><div style="font-family:var(--f2);font-size:11px;font-weight:600">'+(s.livePrice?f(s.livePrice):f(s.entrada))+'</div><div style="font-family:var(--f2);font-size:9px;color:'+proxCol+';margin-top:2px">'+prox+'</div></div>';
+    h+='<div style="background:var(--bg2);border:1px solid var(--brd);border-left:3px solid '+dirCol+';border-radius:6px;padding:10px;margin-bottom:6px">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-family:var(--f2);font-size:13px;font-weight:700">'+(s.par||'').replace('USDT','')+' <span style="color:'+dirCol+';font-size:10px">'+dir+'</span></div><div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:2px">R:R '+(s.rr||'—')+' • '+(s.estrelas||'')+'</div></div>';
+    h+='<div style="text-align:right"><div style="font-family:var(--f2);font-size:11px;font-weight:600">'+(s.livePrice?f(s.livePrice):f(s.entrada))+'</div><div style="font-family:var(--f2);font-size:9px;color:'+proxCol+';margin-top:2px">'+prox+'</div></div></div>';
+    h+='<div style="font-family:var(--f2);font-size:10px;margin-top:6px;padding-top:6px;border-top:1px solid var(--brd);color:var(--t3)">'+prog+' <span style="margin-left:4px;font-size:9px">'+(s.tp2_hit?'TP2 atingido':s.tp1_hit?'TP1 atingido':'aguardando TP1')+'</span></div>';
     h+='</div>';
   });
   el.innerHTML=h;
@@ -1372,10 +1441,16 @@ function renderRecentResults(closed){
   if(!closed.length){el.innerHTML='<div style="font-family:var(--f2);font-size:11px;color:var(--t3);text-align:center;padding:14px;background:var(--bg2);border:1px solid var(--brd);border-radius:8px">Sem trades fechados ainda</div>';return;}
   var h='';
   closed.forEach(function(s){
-    var isWin=s.status==='tp1'||s.status==='tp2'||s.status==='tp3';
-    var icon=isWin?'✅':'❌';
-    var lbl=isWin?s.status.toUpperCase():'STOP';
+    var isWin=s.status==='tp3';
+    var icon=isWin?'✅✅✅':'❌';
+    var lbl=isWin?'TP3 COMPLETO':'STOP';
     var col=isWin?'var(--grn)':'var(--red)';
+    // Mostra quais TPs foram atingidos antes do stop
+    if(s.status==='sl'&&(s.tp1_hit||s.tp2_hit)){
+      icon=s.tp2_hit?'⚠️✅✅':'⚠️✅';
+      lbl='STOP'+(s.tp2_hit?' (pós TP2)':' (pós TP1)');
+      col='var(--amb)';
+    }
     var pct=0;
     if(s.entrada&&s.closePrice){
       pct=((s.closePrice-s.entrada)/s.entrada*100);
@@ -1397,7 +1472,16 @@ var perfMonitorIv=null;
 function startPerfMonitor(){if(perfMonitorIv)return;perfMonitorIv=setInterval(checkOpenTrades,30000);checkOpenTrades();}
 
 async function checkOpenTrades(){
-  var open=signals.filter(function(s){return(s.direcao==='LONG'||s.direcao==='SHORT')&&(!s.status||s.status==='open')&&s.entrada&&s.entrada>0});
+  var now=Date.now();
+  var open=signals.filter(function(s){
+    if(s.direcao!=='LONG'&&s.direcao!=='SHORT')return false;
+    // 'open' = monitorando. tp3/sl = fechado. stale = informativo.
+    if(s.status!=='open')return false;
+    if(!s.entrada||s.entrada<=0)return false;
+    var created=s.time?new Date(s.time).getTime():0;
+    if(now-created<60000)return false;
+    return true;
+  });
   if(!open.length)return;
   var pairs=[];open.forEach(function(s){var p=(s.par||'').replace('/','');if(pairs.indexOf(p)<0)pairs.push(p)});
   try{
@@ -1408,38 +1492,76 @@ async function checkOpenTrades(){
       var p=pm[(s.par||'').replace('/','')];if(!p)return;
       s.livePrice=p;
       var dir=(s.direcao||'').toUpperCase();
-      if(dir==='LONG'){
-        if(s.stop&&p<=s.stop){s.status='sl';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;}
-        else if(s.tp3&&p>=s.tp3){s.status='tp3';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;}
-        else if(s.tp2&&p>=s.tp2){s.status='tp2';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;}
-        else if(s.tp1&&p>=s.tp1){s.status='tp1';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;}
-      }else if(dir==='SHORT'){
-        if(s.stop&&p>=s.stop){s.status='sl';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;}
-        else if(s.tp3&&p<=s.tp3){s.status='tp3';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;}
-        else if(s.tp2&&p<=s.tp2){s.status='tp2';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;}
-        else if(s.tp1&&p<=s.tp1){s.status='tp1';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;}
+      var isLong=dir==='LONG';
+
+      // ── STOP: fecha trade definitivamente ──
+      if(isLong&&s.stop&&p<=s.stop){s.status='sl';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;notifyMilestone(s,'STOP');return;}
+      if(!isLong&&s.stop&&p>=s.stop){s.status='sl';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;notifyMilestone(s,'STOP');return;}
+
+      // ── TP3: fecha trade com lucro máximo ──
+      if(s.tp3&&((isLong&&p>=s.tp3)||(!isLong&&p<=s.tp3))){
+        if(!s.tp1_hit){s.tp1_hit=true;s.tp1_at=new Date().toISOString();}
+        if(!s.tp2_hit){s.tp2_hit=true;s.tp2_at=new Date().toISOString();}
+        s.tp3_hit=true;s.tp3_at=new Date().toISOString();
+        s.status='tp3';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;
+        notifyMilestone(s,'TP3');return;
+      }
+
+      // ── TP2: atualiza mas NÃO fecha ──
+      if(s.tp2&&!s.tp2_hit&&((isLong&&p>=s.tp2)||(!isLong&&p<=s.tp2))){
+        if(!s.tp1_hit){s.tp1_hit=true;s.tp1_at=new Date().toISOString();}
+        s.tp2_hit=true;s.tp2_at=new Date().toISOString();changed=true;
+        notifyMilestone(s,'TP2');
+      }
+
+      // ── TP1: atualiza mas NÃO fecha ──
+      if(s.tp1&&!s.tp1_hit&&((isLong&&p>=s.tp1)||(!isLong&&p<=s.tp1))){
+        s.tp1_hit=true;s.tp1_at=new Date().toISOString();changed=true;
+        notifyMilestone(s,'TP1');
       }
     });
-    if(changed){
-      saveSigs();renderPerf();toast('Trade fechou!','ok');alertBeep({direcao:'LONG',forca:80});
-      // Notificar Telegram de cada trade que fechou — APENAS se tem entrada+closePrice válidos
-      open.forEach(function(s){
-        if(s.status&&s.status!=='open'&&s.closedAt&&s.entrada>0&&s.closePrice>0){
-          var chatId=(curProfile&&curProfile.telegram_chat_id)?curProfile.telegram_chat_id:'';
-          if(chatId){
-            fetch(PROXIES[0]+'/trade-closed',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({par:s.par,dir:s.direcao,status:s.status,entrada:s.entrada,closePrice:s.closePrice,chat_id:chatId})}).catch(function(){});
-          }
-        }
-      });
-    }
+    if(changed){saveSigs();renderSignals();updateDash();}
   }catch(e){console.log('[SPECTRA] Monitor:',e.message)}
+}
+
+// Notifica Telegram em cada milestone
+function notifyMilestone(s,milestone){
+  var chatId=(curProfile&&curProfile.telegram_chat_id)?curProfile.telegram_chat_id:'';
+  if(!chatId||!s.entrada||s.entrada<=0)return;
+  var isFinal=(milestone==='TP3'||milestone==='STOP');
+  var isWin=milestone!=='STOP';
+  var icon=milestone==='STOP'?'❌':milestone==='TP3'?'✅✅✅':milestone==='TP2'?'✅✅':'✅';
+  var name=(s.par||'').replace('USDT','');
+  var dirIcon=s.direcao==='LONG'?'🟢':'🔴';
+  var f=function(v){return v&&v!==0?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6}):'—'};
+  var pct=s.livePrice?((s.livePrice-s.entrada)/s.entrada*100):0;
+  if(s.direcao==='SHORT')pct=-pct;
+  // Barra de progresso visual
+  var prog='';
+  prog+=(s.tp1_hit?'✅':'⬜')+' TP1  ';
+  prog+=(s.tp2_hit?'✅':'⬜')+' TP2  ';
+  prog+=(s.tp3_hit?'✅':'⬜')+' TP3';
+
+  var msg=icon+' <b>'+(isFinal?(milestone==='STOP'?'STOP LOSS':'TRADE COMPLETO — '+milestone):milestone+' ATINGIDO')+'</b>\n\n';
+  msg+=dirIcon+' <b>'+name+'/USDT</b> '+s.direcao+'\n';
+  msg+='━━━━━━━━━━━━━━━━━━\n';
+  msg+='📍 Entrada:    <code>'+f(s.entrada)+'</code>\n';
+  msg+='📊 Atual:      <code>'+f(s.livePrice)+'</code> <b>'+(pct>=0?'+':'')+pct.toFixed(2)+'%</b>\n';
+  msg+=prog+'\n';
+  if(isFinal){
+    msg+='━━━━━━━━━━━━━━━━━━\n';
+    msg+='🏁 Resultado: <b>'+(pct>=0?'+':'')+pct.toFixed(2)+'%</b>\n';
+  }
+  msg+='⏰ '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+
+  fetch(PROXIES[0]+'/send-signal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,chat_id:chatId})}).catch(function(){});
 }
 
 function renderPerf(){
   if(!document.getElementById('pWR'))return;
   var _set=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v};
   var ops=signals.filter(function(s){return s.direcao==='LONG'||s.direcao==='SHORT'});
-  var wins=ops.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'});
+  var wins=ops.filter(function(s){return s.status==='tp3'});
   var losses=ops.filter(function(s){return s.status==='sl'});
   var open=ops.filter(function(s){return!s.status||s.status==='open'});
   var closed=wins.length+losses.length;
@@ -1481,9 +1603,9 @@ function renderPerf(){
   // LONG vs SHORT
   var longs=ops.filter(function(s){return s.direcao==='LONG'});
   var shorts=ops.filter(function(s){return s.direcao==='SHORT'});
-  var longWins=longs.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'}).length;
+  var longWins=longs.filter(function(s){return s.status==='tp3'}).length;
   var longClosed=longs.filter(function(s){return s.status&&s.status!=='open'}).length;
-  var shortWins=shorts.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'}).length;
+  var shortWins=shorts.filter(function(s){return s.status==='tp3'}).length;
   var shortClosed=shorts.filter(function(s){return s.status&&s.status!=='open'}).length;
   _set('pLongs',longs.length);
   _set('pShorts',shorts.length);
@@ -1614,38 +1736,46 @@ function startAutoScan(){
   autoScanOn=true;
   var st=document.getElementById('autoStatus');
   if(st)st.style.color='var(--grn)';
-  autoLog('Auto-scan ativado — intervalo: '+(autoIntervalMin>=60?(autoIntervalMin/60)+'h':autoIntervalMin+'min'));
-  // Checa último scan: só dispara se já passou o intervalo
+
   var lastScan=parseInt(localStorage.getItem(uKey('last_scan'))||'0');
   var elapsed=Date.now()-lastScan;
   var intervalMs=autoIntervalMin*60*1000;
-  if(elapsed>=intervalMs){
-    autoLog('Executando scan (último foi há '+Math.round(elapsed/60000)+' min)');
+  var remaining=Math.max(0,intervalMs-elapsed);
+
+  if(remaining<=0){
+    // Já passou o intervalo — roda agora
+    autoLog('Scan necessário (último há '+Math.round(elapsed/60000)+' min)');
     runAutoScan();
+    // Agenda próximo no intervalo completo
+    autoScanTimer=setInterval(runAutoScan,intervalMs);
+    startCountdown(intervalMs);
   }else{
-    var left=Math.round((intervalMs-elapsed)/60000);
-    autoLog('Aguardando próximo scan em '+left+' min (Worker roda em background)');
+    // Ainda não passou — agenda pro tempo restante
+    autoLog('Próximo scan em '+Math.round(remaining/60000)+' min (Worker cuida em background)');
+    // Primeiro disparo no tempo restante, depois intervalo completo
+    autoScanTimer=setTimeout(function(){
+      runAutoScan();
+      autoScanTimer=setInterval(runAutoScan,intervalMs);
+      startCountdown(intervalMs);
+    },remaining);
+    startCountdown(remaining);
   }
-  // Agenda o próximo
-  autoScanTimer=setInterval(runAutoScan,intervalMs);
-  startCountdown();
 }
 
 function stopAutoScan(){
   autoScanOn=false;
-  if(autoScanTimer){clearInterval(autoScanTimer);autoScanTimer=null;}
+  if(autoScanTimer){clearInterval(autoScanTimer);clearTimeout(autoScanTimer);autoScanTimer=null;}
   if(autoCountdown){clearInterval(autoCountdown);autoCountdown=null;}
   var st=document.getElementById('autoStatus');
   if(st){st.textContent='Desativado';st.style.color='var(--t3)';}
-  autoLog('Auto-scan desativado');
 }
 
-function startCountdown(){
+function startCountdown(ms){
   if(autoCountdown)clearInterval(autoCountdown);
-  var next=Date.now()+autoIntervalMin*60*1000;
+  var next=Date.now()+ms;
   autoCountdown=setInterval(function(){
     var left=Math.max(0,next-Date.now());
-    if(left<=0){next=Date.now()+autoIntervalMin*60*1000;}
+    if(left<=0){next=Date.now()+autoIntervalMin*60*1000;} // reseta ao completar
     var h=Math.floor(left/3600000),m=Math.floor((left%3600000)/60000),s=Math.floor((left%60000)/1000);
     var st=document.getElementById('autoStatus');
     if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — próximo scan: '+h+'h'+String(m).padStart(2,'0')+'m'+String(s).padStart(2,'0')+'s';
@@ -1653,29 +1783,34 @@ function startCountdown(){
 }
 
 async function runAutoScan(){
-  if(isAnalyzing){autoLog('Análise manual em andamento — scan adiado');return;}
-  // Registra timestamp IMEDIATAMENTE (evita duplicar se o trader mudar de aba no meio)
+  if(isAnalyzing){autoLog('Análise em andamento — scan adiado');return;}
   localStorage.setItem(uKey('last_scan'),Date.now().toString());
-  autoLog('Scan automático: '+monitored.length+' pares');
-  var found=0,operaveis=[];
+  autoLog('Scan: '+monitored.length+' pares');
+  var found=0;
   for(var i=0;i<monitored.length;i++){
     var pair=monitored[i];
+    // Dedup: pula se já tem sinal aberto pra esse par
+    var existing=signals.find(function(s){return(s.par===pair||s.par===pair.replace('USDT','/USDT'))&&(!s.status||s.status==='open')});
+    if(existing){autoLog('⏭ '+pair.replace('USDT','')+' — sinal aberto existe');continue;}
     autoLog((i+1)+'/'+monitored.length+' '+pair.replace('USDT','')+'...');
     try{
       var mkt=await buildMktStr(pair);
-      var text=await callGemini(SYSTEM_PROMPT,mkt,true); // skipTg — consolida no final
+      var text=await callGemini(SYSTEM_PROMPT,mkt,true);
       var raw=exJSON(text);
       var sig=mapSignal(raw,pair);
       if(sig){
+        sig.id=genSigId();
         sig.time=new Date().toISOString();
         sig.status='open';
-        signals.unshift(sig);signals=signals.slice(0,100);saveSigs();
         var dir=(sig.direcao||'').toUpperCase();
         if(dir==='LONG'||dir==='SHORT'){
-          found++;operaveis.push(sig);
+          signals.unshift(sig);signals=signals.slice(0,100);saveSigs();
+          found++;
           alertBeep(sig);
           autoLog('✅ '+pair.replace('USDT','')+' → '+dir+' R:R '+(sig.rr||'—'));
         }else{
+          // AGUARDAR — salva mas não conta como operável
+          signals.unshift(sig);signals=signals.slice(0,100);saveSigs();
           autoLog('◆ '+pair.replace('USDT','')+' → AGUARDAR');
         }
       }
@@ -1683,26 +1818,9 @@ async function runAutoScan(){
     if(i<monitored.length-1)await new Promise(function(ok){setTimeout(ok,4000)});
   }
   renderSignals();updateDash();
-  autoLog('Scan completo — '+found+' operáveis de '+monitored.length+' pares');
-  // UMA mensagem consolidada pro Telegram (se tem operáveis + chatId)
-  if(operaveis.length>0&&curProfile&&curProfile.telegram_chat_id){
-    var f=function(v){return v&&v!==0?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6}):'—'};
-    var pct=function(t,e){if(!e||!t||e===0)return'';var p=((t-e)/e*100);return(p>=0?'+':'')+p.toFixed(2)+'%'};
-    var msg='📡 <b>SPECTRA — '+operaveis.length+' SINAL'+(operaveis.length>1?'IS':'')+'</b>\n';
-    msg+=monitored.length+' analisados\n━━━━━━━━━━━━━━━━━━\n\n';
-    operaveis.forEach(function(s){
-      var icon=s.direcao==='LONG'?'🟢':'🔴';var nm=(s.par||'').replace('USDT','');
-      msg+=icon+' <b>'+nm+'</b> '+s.direcao+' '+(s.estrelas||'')+'\n';
-      msg+='📍 <code>'+f(s.entrada)+'</code>  🛡 <code>'+f(s.stop)+'</code> '+pct(s.stop,s.entrada)+'\n';
-      msg+='🎯 <code>'+f(s.tp1)+'</code> '+pct(s.tp1,s.entrada)+'\n';
-      msg+='📊 R:R <code>'+(s.rr||'—')+'</code>\n\n';
-    });
-    msg+='━━━━━━━━━━━━━━━━━━\n⏰ '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' • SPEC MIND';
-    if(msg.length>4000)msg=msg.substring(0,3950)+'\n\n... [ver app]';
-    fetch(PROXIES[0]+'/send-signal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,chat_id:curProfile.telegram_chat_id})}).catch(function(){});
-    toast(found+' sinais enviados ao Telegram','ok');
-  }
-  startCountdown();
+  autoLog('Completo — '+found+' operáveis');
+  if(found>0){toast(found+' sinais encontrados','ok');}
+  startCountdown(autoIntervalMin*60*1000);
 }
 
 function autoLog(msg){
