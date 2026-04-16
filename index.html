@@ -37,7 +37,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .sig.long::before{background:var(--grn)}.sig.short::before{background:var(--red)}.sig.wait::before{background:var(--amb)}
 .sig-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .sig-pair{font-size:18px;font-weight:700;letter-spacing:1px}
-.sig-dir{font-family:var(--f2);font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;letter-spacing:1px}
+.sig-dir{font-family:var(--f2);font-size:13px;font-weight:700;padding:6px 14px;border-radius:6px;letter-spacing:2px}
 .sig-dir.long{background:var(--grnd);color:var(--grn);border:1px solid var(--grng)}
 .sig-dir.short{background:var(--redd);color:var(--red);border:1px solid var(--red)}
 .sig-dir.wait{background:var(--ambd);color:var(--amb);border:1px solid var(--amb)}
@@ -407,7 +407,7 @@ async function doSignup(){
   if(r2.error){aMsg('Conta criada. Faça login.',false);swAuth('login',document.querySelector('.auth-tab'));return;}
   curUser=r2.data.user;checkAccess();
 }
-async function doLogout(){stopAutoScan();if(perfMonitorIv){clearInterval(perfMonitorIv);perfMonitorIv=null;}if(sb)await sb.auth.signOut();curUser=null;curProfile=null;signals=[];monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];showAuth();}
+async function doLogout(){stopAutoScan();if(perfMonitorIv){clearInterval(perfMonitorIv);perfMonitorIv=null;}localStorage.removeItem(uKey('spectra_autoscan'));if(sb)await sb.auth.signOut();curUser=null;curProfile=null;signals=[];monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];showAuth();}
 
 async function forgotPass(){
   var email=document.getElementById('logEmail').value.trim();
@@ -450,7 +450,10 @@ function showApp(){
     var tgIn=document.getElementById('tgChatInput');
     if(tgIn&&curProfile.telegram_chat_id){tgIn.value=curProfile.telegram_chat_id;document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Configurado</span>';}
     // Auto-scan restore
-    if(curProfile.auto_scan){
+    var wasAutoOn=curProfile.auto_scan||localStorage.getItem(uKey('spectra_autoscan'))==='1';
+    var savedInterval=localStorage.getItem(uKey('spectra_interval'));
+    if(savedInterval){autoIntervalMin=parseInt(savedInterval);var sel=document.getElementById('scanInterval');if(sel)sel.value=autoIntervalMin;}
+    if(wasAutoOn){
       var tgBtn=document.getElementById('tgAutoScan');
       if(tgBtn&&!tgBtn.classList.contains('on')){tgBtn.classList.add('on');autoScanOn=true;startAutoScan();}
     }
@@ -644,15 +647,20 @@ async function fetchMarketData(symbol,interval){
     else dow='LATERAL (sem definição)';
   }
 
-  // ═══ FIBONACCI ═══
+  // ═══ FIBONACCI LOGARÍTMICO (retração + extensão) ═══
   var sH=sw.h.length?sw.h[sw.h.length-1].p:Math.max.apply(null,h.slice(-50));
   var sL=sw.l.length?sw.l[sw.l.length-1].p:Math.min.apply(null,l.slice(-50));
-  var rng=sH-sL;
-  var f236=sH-rng*0.236,f382=sH-rng*0.382,f500=sH-rng*0.5,f618=sH-rng*0.618,f786=sH-rng*0.786;
+  // Retração LOG: level = exp(ln(H) - (ln(H)-ln(L)) * ratio)
+  var lnH=Math.log(sH),lnL=Math.log(sL),lnRng=lnH-lnL;
+  var fib=function(r){return Math.exp(lnH-lnRng*r)};
+  var f236=fib(0.236),f382=fib(0.382),f500=fib(0.5),f618=fib(0.618),f786=fib(0.786);
+  // Extensão LOG: level = exp(ln(L) + (ln(H)-ln(L)) * ratio)
+  var fibExt=function(r){return Math.exp(lnL+lnRng*r)};
+  var e100=fibExt(1.0),e1272=fibExt(1.272),e1414=fibExt(1.414),e1618=fibExt(1.618),e2270=fibExt(2.270),e2414=fibExt(2.414);
+  // Golden Zone
   var gzStatus=p<=f618&&p>=f786?'SIM — preço DENTRO da Golden Zone':
                p>f618&&p<=f500?'PARCIAL — entre 0.5 e 0.618':
                p<f786?'ABAIXO da Golden Zone (retração profunda)':'NÃO — preço acima da Golden Zone';
-  // Distância até GZ
   var distGZ618=((p-f618)/p*100).toFixed(2);
 
   // ═══ VOLUME ═══
@@ -687,8 +695,9 @@ async function fetchMarketData(symbol,interval){
     dema72:dema72.toFixed(dec),demaStatus:demaStatus,demaDist:demaDist,
     // DOW
     dow:dow,highs:rh.map(function(s){return s.p.toFixed(dec)}),lows:rl.map(function(s){return s.p.toFixed(dec)}),
-    // FIBONACCI
+    // FIBONACCI (LOG)
     fibH:sH.toFixed(dec),fibL:sL.toFixed(dec),f236:f236.toFixed(dec),f382:f382.toFixed(dec),f500:f500.toFixed(dec),f618:f618.toFixed(dec),f786:f786.toFixed(dec),gz:gzStatus,distGZ618:distGZ618,
+    e100:e100.toFixed(dec),e1272:e1272.toFixed(dec),e1414:e1414.toFixed(dec),e1618:e1618.toFixed(dec),e2270:e2270.toFixed(dec),e2414:e2414.toFixed(dec),
     // VOLUME + CANDLE
     volStatus:volStatus,candle:candle
   };
@@ -722,7 +731,7 @@ FASE 3 — FALHA (GATILHO): DIF se aproxima da DEA e REJEITA — NÃO cruza de v
 • DIF e DEA ABAIXO do zero na falha = BOM (momentum emergindo, probabilidade boa)
 • DIF e DEA na zona do zero = MODERADO (indefinição, precisa mais confluência)
 
-FASE 4 — ENTRADA CIRÚRGICA: Entrada na região de valor (Fibo + POC + DEMA72). Stop abaixo do último fundo estrutural (curto). Alvos: TP1 100% extensão Fibo, TP2 161.8%, TP3 200%+. R:R mínimo 3:1. Se o GATE diário confirmar depois (DIF cruza zero no diário), o R:R potencial sobe para 6:1, 8:1+.
+FASE 4 — ENTRADA CIRÚRGICA: Entrada na REGIÃO DE VALOR (confluência de Fibo LOG 0.618-0.786 + POC + DEMA72). Stop abaixo do último fundo estrutural. REGIÕES DE ALVO (extensão Fibo LOG): Região TP1: 100%-127.2%, Região TP2: 141.4%-161.8%, Região TP3: 227%+. R:R mínimo 3:1. Se GATE diário confirmar depois, R:R potencial 6:1+.
 
 ═══ SETUP SHORT (após grande alta) — ESPELHO PERFEITO ═══
 
@@ -734,7 +743,7 @@ FASE 3 — FALHA (GATILHO): DIF se aproxima da DEA e REJEITA — NÃO cruza de v
 • DIF e DEA ABAIXO do zero = EXCELENTE (momentum vendedor confirmado)
 • DIF e DEA ACIMA do zero = BOM (vendedor emergindo)
 
-FASE 4 — ENTRADA SHORT: Entrada na região de valor (topo da retração). Stop acima do último topo estrutural. R:R mínimo 3:1.
+FASE 4 — ENTRADA SHORT: Entrada na REGIÃO DE VALOR (topo da retração — confluência Fibo LOG + POC + DEMA72). Stop acima do último topo estrutural. REGIÕES DE ALVO: Região TP1: 100%-127.2% ext, Região TP2: 141.4%-161.8%, Região TP3: 227%+. R:R mínimo 3:1.
 
 ═══ REGRAS INVIOLÁVEIS DA FALHA ═══
 • A FALHA não é o cruzamento. A FALHA é a REJEIÇÃO do cruzamento na retração.
@@ -767,7 +776,7 @@ PERSONALIDADE: Trader brasileiro veterano, 20+ anos. Chama "operador". Direto, s
 
 7 PILARES (analise CADA UM com os dados fornecidos):
 1)ELLIOTT: Onde estamos no ciclo? Use topos/fundos pra inferir. Final onda 5=reversão, onda 3=mais forte.
-2)FIBONACCI: Preço está na GoldenZone (0.618-0.786)? Se sim, confluência forte. Use os níveis calculados.
+2)FIBONACCI LOG: Retração E extensão em escala LOGARÍTMICA. Preço está na GoldenZone LOG (0.618-0.786)? Extensão LOG: 100%, 127.2%, 141.4%, 161.8%, 227%. Use os níveis calculados nos dados. REGIÕES de alvo, não preços fixos. Ex: "Região TP1: ext 100%-127.2% = 72,800-73,500".
 3)MACD 12/72/35: GATE diário obrigatório. Line>0=bull, <0=bear. No 4H: analise DIF vs DEA vs Histograma. Histograma virando? DIF se aproximando da DEA? ★★★ FALHA DE CRUZAMENTO e PADRÃO DE ABSORÇÃO são prioridade máxima.
 4)DOW: Topos/fundos ascendentes ou descendentes? Preço NÃO renova mínima/máxima = primeiro sinal de reversão.
 5)WYCKOFF: Preço não renova mínima + segura acima EMA lenta + volume absorvido = SPRING (compra). Preço não renova máxima + segura abaixo EMA lenta = UTAD (venda). O smart money posiciona ANTES.
@@ -782,15 +791,17 @@ FORMATO: Responda SOMENTE com JSON puro. Sem texto antes ou depois.
 ⚠️ REGRAS DE FORMATO — CRÍTICO:
 - TODOS OS 7 PILARES OBRIGATÓRIOS: elliott, fibonacci, macd_12_72, dow, wyckoff, gann, price_action. JSON incompleto = falha total.
 - "analise" de cada pilar: 1 frase curta (máx 100 caracteres). Sem enrolação.
-- "narrativa": 3 frases diretas (máx 400 caracteres). Veredicto + confluência + timing.
+- "narrativa": 3 frases diretas (máx 400 caracteres). Veredicto + confluência + REGIÕES de alvo (não preço fixo).
 - "descricao" dos indicadores: 1 frase (máx 80 caracteres).
 - JSON COMPACTO — sem espaços extras, sem quebras de linha dentro de strings.
-- Probabilidades somam 100%. Gestão de risco com números reais.
+- Probabilidades somam 100%.
+- FIBONACCI LOGARÍTMICO: Use os níveis LOG fornecidos nos dados. Retração LOG + Extensão LOG.
+- REGIÕES DE ALVO: alvo_1 = ponto médio da região TP1 (ext LOG 100%-127.2%), alvo_2 = ponto médio da região TP2 (ext LOG 141.4%-161.8%), alvo_3 = ponto médio da região TP3 (ext LOG 227%-241.4%). Na narrativa, DESCREVA as regiões (ex: "Região TP1: 72,800-73,500").
 - TODOS os 7 pilares devem estar presentes. JSON incompleto = falha total.
 
-Modelo: {"ativo":"PAR","direcao_dominante":"COMPRADOR|VENDEDOR|LATERAL","probabilidades":{"comprador":0,"vendedor":0,"lateral":0},"confluencia":{"total_favoraveis":0,"total_pilares":7,"classificacao":"★★(N)","pilares":{"elliott":{"score":0,"direcao":"","analise":""},"fibonacci":{"score":0,"direcao":"","analise":""},"macd_12_72":{"score":0,"direcao":"","analise":""},"dow":{"score":0,"direcao":"","analise":""},"wyckoff":{"score":0,"direcao":"","analise":""},"gann":{"score":0,"direcao":"","analise":""},"price_action":{"score":0,"direcao":"","analise":""}}},"indicadores_complementares":{"macd_falha_cruzamento":{"tipo":"","descricao":"","confirmacao":""},"dema_72":{"valor":0,"status":"","confirmacao":""}},"gestao_risco":{"entrada_sugerida":0,"stop_loss":0,"alvo_1":0,"alvo_2":0,"alvo_3":0,"rr_ratio":"","valido":true},"veredicto":"OPERAR|AGUARDAR","narrativa":"Estrutura de mercado. Confluência dos pilares. Veredicto com R:R. Timing de entrada ou aguardo."}
+Modelo: {"ativo":"PAR","direcao_dominante":"COMPRADOR|VENDEDOR|LATERAL","probabilidades":{"comprador":0,"vendedor":0,"lateral":0},"confluencia":{"total_favoraveis":0,"total_pilares":7,"classificacao":"★★(N)","pilares":{"elliott":{"score":0,"direcao":"","analise":""},"fibonacci":{"score":0,"direcao":"","analise":""},"macd_12_72":{"score":0,"direcao":"","analise":""},"dow":{"score":0,"direcao":"","analise":""},"wyckoff":{"score":0,"direcao":"","analise":""},"gann":{"score":0,"direcao":"","analise":""},"price_action":{"score":0,"direcao":"","analise":""}}},"indicadores_complementares":{"macd_falha_cruzamento":{"tipo":"","descricao":"","confirmacao":""},"dema_72":{"valor":0,"status":"","confirmacao":""}},"gestao_risco":{"entrada_sugerida":0,"stop_loss":0,"alvo_1":0,"alvo_2":0,"alvo_3":0,"rr_ratio":"","valido":true},"veredicto":"OPERAR|AGUARDAR","narrativa":"Estrutura. Confluência. Regiões de alvo com extensão Fibo LOG. Timing."}
 
-REGRAS INVIOLÁVEIS: 4H com confluência ★★★+ pode antecipar entrada (R:R≥3:1). Diário confirmando = amplia alvos (R:R 6:1+). Só GoldenZone. Stop obrigatório e estrutural. ≤2 pilares=NÃO OPERAR. ★★★Falha de cruzamento MACD + absorção = sinal prioritário.`;
+REGRAS INVIOLÁVEIS: 4H com confluência ★★★+ pode antecipar entrada (R:R≥3:1). Diário confirmando = amplia alvos (R:R 6:1+). Só GoldenZone LOG. Stop obrigatório e estrutural. ≤2 pilares=NÃO OPERAR. ★★★Falha de cruzamento MACD + absorção = sinal prioritário.`;
 
 
 // ── PARES ──
@@ -879,10 +890,12 @@ function mapSignal(raw,pair){
 }
 
 // ── BUILD MARKET DATA STRING ──
+var lastExtLevels=null;
 async function buildMktStr(sym){
   console.log('[SPECTRA] buildMktStr:',sym);
   try{
     var d=await fetchMarketData(sym,'240');
+    lastExtLevels={e100:parseFloat(d.e100),e1272:parseFloat(d.e1272),e1414:parseFloat(d.e1414),e1618:parseFloat(d.e1618),e2270:parseFloat(d.e2270),e2414:parseFloat(d.e2414)};
     if(!d||!d.price)throw new Error('Sem dados da Binance para '+sym);
     console.log('[SPECTRA] fetchMarketData OK — preço:',d.price);
   return sym+' 4H|Preço:'+d.price
@@ -892,7 +905,8 @@ async function buildMktStr(sym){
     +'|★Falha4H:'+d.macdFailTF+' '+d.macdFailDescTF+' Zona:'+d.macdFailZonaTF
     +'|DEMA72='+d.dema72+' '+d.demaStatus
     +'|DOW:'+d.dow+' T:'+d.highs.join(',')+' F:'+d.lows.join(',')
-    +'|FIBO:'+d.fibH+'→'+d.fibL+' .618='+d.f618+' .786='+d.f786+' GZ:'+d.gz
+    +'|FIBO LOG:'+d.fibH+'→'+d.fibL+' .382='+d.f382+' .5='+d.f500+' .618='+d.f618+' .786='+d.f786+' GZ:'+d.gz
+    +'|EXT LOG: 100%='+d.e100+' 127.2%='+d.e1272+' 141.4%='+d.e1414+' 161.8%='+d.e1618+' 227%='+d.e2270
     +'|VOL:'+d.volStatus+'|CANDLE:'+d.candle
     +'|JSON obrigatório. Dados reais Binance.';
   }catch(e){console.error('[SPECTRA] buildMktStr erro:',e);throw new Error('Binance: '+e.message);}
@@ -919,7 +933,17 @@ async function analisarUm(){
     var raw=exJSON(text);
     if(!raw){console.error('[SPECTRA] exJSON retornou null. Texto:',text.substring(0,500));toast('IA respondeu mas JSON inválido — veja console','err');isAnalyzing=false;st.style.display='none';btn.disabled=false;btn.textContent='⚡ ANALISAR';return;}
     var sig=mapSignal(raw,pair);
-    if(sig){sig.time=new Date().toISOString();sig.status='open';signals.unshift(sig);signals=signals.slice(0,100);saveSigs();toast(pair.replace('USDT','')+' → '+(sig.direcao||'OK')+' '+(sig.estrelas||''),'ok');alertBeep(sig);}
+    if(sig){
+      sig.time=new Date().toISOString();sig.status='open';
+      // Attach Fibo LOG extension regions
+      if(lastExtLevels){
+        sig.regTP1=[lastExtLevels.e100,lastExtLevels.e1272];
+        sig.regTP2=[lastExtLevels.e1414,lastExtLevels.e1618];
+        sig.regTP3=[lastExtLevels.e2270,lastExtLevels.e2414];
+      }
+      signals.unshift(sig);signals=signals.slice(0,100);saveSigs();
+      toast(pair.replace('USDT','')+' → '+(sig.direcao||'OK')+' '+(sig.estrelas||''),'ok');alertBeep(sig);
+    }
     else{toast('Mapeamento falhou — veja console','err');}
   }catch(e){stopPillarAnim();console.error('[SPECTRA] analisarUm ERRO:',e);toast('Erro: '+e.message,'err');}
   st.style.display='none';btn.disabled=false;btn.style.opacity='1';btn.textContent='⚡ ANALISAR COM SPEC MIND';
@@ -934,18 +958,41 @@ function renderSignals(){
   signals.slice(0,20).forEach(function(s){
     var dir=(s.direcao||'').toUpperCase(),cls=dir==='LONG'?'long':dir==='SHORT'?'short':'wait';
     var dirTxt=dir==='LONG'?'▲ LONG':dir==='SHORT'?'▼ SHORT':'◆ AGUARDAR';
+    var dirBg=dir==='LONG'?'var(--grn)':dir==='SHORT'?'var(--red)':'var(--amb)';
+    var dirBgD=dir==='LONG'?'var(--grnd)':dir==='SHORT'?'var(--redd)':'var(--ambd)';
     var forca=s.forca||50,fCor=forca>=70?'var(--grn)':forca>=50?'var(--amb)':'var(--red)';
     var f=function(v){if(!v||v===0)return'—';return typeof v==='number'?v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6}):v};
     var pills='';if(s.pilares){for(var k in s.pilares){var v=s.pilares[k]||'';var pc=v.indexOf('▲')>-1?'pill-g':v.indexOf('▼')>-1?'pill-r':'pill-n';pills+='<span class="pill '+pc+'">'+k+': '+v+'</span>';}}
     var time=s.time?new Date(s.time).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—';
-    var vered=s.veredicto?'<span style="font-family:var(--f2);font-size:9px;padding:2px 8px;border-radius:3px;background:'+(s.veredicto.indexOf('OPERAR')>-1&&s.veredicto.indexOf('NÃO')<0?'var(--grnd);color:var(--grn)':'var(--ambd);color:var(--amb)')+'">'+s.veredicto+'</span>':'';
-    h+='<div class="sig '+cls+'"><div class="sig-top"><span class="sig-pair">'+(s.par||'—').replace('USDT','')+'</span><span class="sig-dir '+cls+'">'+dirTxt+'</span></div>'
-      +'<div class="str-meter" style="margin:8px 14px 0"><div class="str-label">FORÇA</div><div class="str-bar"><div class="str-fill" style="width:'+forca+'%;background:'+fCor+'"></div></div><div class="str-pct" style="color:'+fCor+'">'+forca+'%</div></div>'
-      +'<div class="sig-grid" style="padding:0 14px"><div class="sig-cell"><div class="sig-cell-label">ENTRADA</div><div class="sig-cell-val">'+f(s.entrada)+'</div></div><div class="sig-cell"><div class="sig-cell-label" style="color:var(--red)">STOP <span style="opacity:.6;font-size:9px">'+(s.entrada&&s.stop?((s.stop-s.entrada)/s.entrada*100).toFixed(2)+'%':'')+'</span></div><div class="sig-cell-val" style="color:var(--red)">'+f(s.stop)+'</div></div><div class="sig-cell"><div class="sig-cell-label" style="color:var(--grn)">TP1 <span style="opacity:.6;font-size:9px">'+(s.entrada&&s.tp1?('+'+((s.tp1-s.entrada)/s.entrada*100).toFixed(2)+'%'):'')+'</span></div><div class="sig-cell-val" style="color:var(--grn)">'+f(s.tp1)+'</div></div></div>'
-      +'<div class="sig-grid" style="padding:0 14px"><div class="sig-cell"><div class="sig-cell-label" style="color:var(--grn)">TP2</div><div class="sig-cell-val" style="color:var(--grn)">'+f(s.tp2)+'</div></div><div class="sig-cell"><div class="sig-cell-label" style="color:var(--grn)">TP3</div><div class="sig-cell-val" style="color:var(--grn)">'+f(s.tp3)+'</div></div><div class="sig-cell"><div class="sig-cell-label">R:R</div><div class="sig-cell-val" style="color:var(--amb)">'+f(s.rr)+'</div></div></div>'
-      +(s.motivo?'<div style="margin:8px 14px;padding:8px 0;border-top:1px solid var(--brd);font-size:13px;color:var(--t2);line-height:1.6">💡 '+s.motivo+'</div>':'')
-      +'<div style="padding:0 14px 6px"><div class="sig-pills">'+pills+'</div></div>'
-      +'<div class="sig-meta" style="padding:0 14px 8px"><span>'+time+' • '+(s.estrelas||'—')+' '+vered+'</span><span class="sig-rr">R:R '+(s.rr||'—')+'</span></div></div>';
+    var vered=s.veredicto||'';
+    var veredBg=vered.indexOf('OPERAR')>-1&&vered.indexOf('NÃO')<0?'var(--grnd)':'var(--ambd)';
+    var veredCol=vered.indexOf('OPERAR')>-1&&vered.indexOf('NÃO')<0?'var(--grn)':'var(--amb)';
+    // Card
+    h+='<div class="sig '+cls+'">';
+    // VEREDICTO GRANDE no topo
+    h+='<div style="background:'+dirBgD+';border:1px solid '+dirBg+'44;border-radius:8px;padding:12px;margin:0 0 10px;text-align:center">';
+    h+='<div style="font-family:var(--f2);font-size:22px;font-weight:800;color:'+dirBg+';letter-spacing:3px">'+dirTxt+'</div>';
+    h+='<div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:6px">';
+    h+='<span style="font-size:18px;font-weight:700">'+(s.par||'—').replace('USDT','')+'</span>';
+    h+='<span style="font-family:var(--f2);font-size:11px;color:'+fCor+'">'+forca+'%</span>';
+    if(vered)h+='<span style="font-family:var(--f2);font-size:10px;padding:3px 10px;border-radius:4px;background:'+veredBg+';color:'+veredCol+';font-weight:600">'+vered+'</span>';
+    h+='</div></div>';
+    // Barra de força
+    h+='<div class="str-meter" style="margin:0 14px 8px"><div class="str-label">CONFLUÊNCIA</div><div class="str-bar"><div class="str-fill" style="width:'+forca+'%;background:'+fCor+'"></div></div><div class="str-pct" style="color:'+fCor+'">'+(s.estrelas||'—')+'</div></div>';
+    // Regiões de alvo (Fibo LOG)
+    var reg1=s.regTP1,reg2=s.regTP2,reg3=s.regTP3;
+    var fReg=function(r){if(!r||!r[0]||!r[1])return'—';return f(r[0])+' — '+f(r[1])};
+    // Preços
+    h+='<div class="sig-grid" style="padding:0 14px"><div class="sig-cell"><div class="sig-cell-label">ENTRADA</div><div class="sig-cell-val">'+f(s.entrada)+'</div></div><div class="sig-cell"><div class="sig-cell-label" style="color:var(--red)">STOP <span style="opacity:.6;font-size:9px">'+(s.entrada&&s.stop?((s.stop-s.entrada)/s.entrada*100).toFixed(2)+'%':'')+'</span></div><div class="sig-cell-val" style="color:var(--red)">'+f(s.stop)+'</div></div><div class="sig-cell"><div class="sig-cell-label" style="color:var(--grn)">REGIÃO TP1 <span style="font-size:8px;opacity:.6">ext 100-127%</span></div><div class="sig-cell-val" style="color:var(--grn);font-size:10px">'+fReg(reg1)+'</div></div></div>';
+    // TP regions
+    h+='<div class="sig-grid" style="padding:0 14px"><div class="sig-cell"><div class="sig-cell-label" style="color:var(--grn)">REGIÃO TP2 <span style="font-size:8px;opacity:.6">ext 141-161%</span></div><div class="sig-cell-val" style="color:var(--grn);font-size:10px">'+fReg(reg2)+'</div></div><div class="sig-cell"><div class="sig-cell-label" style="color:var(--grn)">REGIÃO TP3 <span style="font-size:8px;opacity:.6">ext 227%+</span></div><div class="sig-cell-val" style="color:var(--grn);font-size:10px">'+fReg(reg3)+'</div></div><div class="sig-cell"><div class="sig-cell-label">R:R</div><div class="sig-cell-val" style="color:var(--amb);font-size:16px;font-weight:700">'+f(s.rr)+'</div></div></div>';
+    // Narrativa
+    if(s.motivo)h+='<div style="margin:8px 14px;padding:8px 0;border-top:1px solid var(--brd);font-size:13px;color:var(--t2);line-height:1.6">💡 '+s.motivo+'</div>';
+    // Pills
+    h+='<div style="padding:0 14px 6px"><div class="sig-pills">'+pills+'</div></div>';
+    // Footer
+    h+='<div class="sig-meta" style="padding:0 14px 8px"><span>'+time+' • R:R '+(s.rr||'—')+'</span></div>';
+    h+='</div>';
   });
   document.getElementById('sigList').innerHTML=h;
 }
@@ -1139,11 +1186,15 @@ function toggleAutoScan(btn){
   autoScanOn=!autoScanOn;
   btn.classList.toggle('on');
   if(autoScanOn){startAutoScan()}else{stopAutoScan()}
+  if(curProfile)curProfile.auto_scan=autoScanOn;
   if(sb&&curUser)sb.from('profiles').update({auto_scan:autoScanOn}).eq('id',curUser.id);
+  localStorage.setItem(uKey('spectra_autoscan'),autoScanOn?'1':'0');
+  localStorage.setItem(uKey('spectra_interval'),autoIntervalMin);
 }
 
 function updateAutoInterval(){
   autoIntervalMin=parseInt(document.getElementById('scanInterval').value)||240;
+  localStorage.setItem(uKey('spectra_interval'),autoIntervalMin);
   if(autoScanOn){stopAutoScan();startAutoScan();}
 }
 
@@ -1243,7 +1294,8 @@ function saveTgChat(){
   var chatId=document.getElementById('tgChatInput').value.trim();
   if(!chatId){toast('Cole seu Chat ID','err');return;}
   if(sb&&curUser){
-    sb.from('profiles').update({telegram_chat_id:chatId}).eq('id',curUser.id).then(function(){
+    sb.from('profiles').update({telegram_chat_id:chatId}).eq('id',curUser.id).then(function(r){
+      if(curProfile)curProfile.telegram_chat_id=chatId;
       document.getElementById('tgStatus').innerHTML='<span style="color:var(--grn)">✓ Chat ID salvo</span>';
       toast('Telegram configurado!','ok');
     });
