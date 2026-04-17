@@ -17,7 +17,7 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--f1)
 button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .shell{min-height:100vh;display:flex;flex-direction:column;padding-bottom:54px}
 .nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;background:var(--bg2);border-top:1px solid var(--brd);padding:6px 0 max(6px,env(safe-area-inset-bottom))}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border:none;background:none;color:var(--t3);font-size:9px;font-weight:500;letter-spacing:.5px;transition:.2s}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border:none;background:none;color:var(--t3);font-size:10px;font-weight:500;letter-spacing:.5px;transition:.2s}
 .nav-item.on{color:var(--acc)}
 .nav-icon{font-size:20px;line-height:1}
 .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--brd)}
@@ -149,16 +149,16 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
   <div style="font-family:var(--f2);font-size:12px;color:var(--t2);text-align:center;max-width:340px;line-height:1.7;margin-bottom:6px">Seu teste gratuito de 3 dias terminou. Assine para continuar recebendo sinais.</div>
   <div id="expInfo" style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-bottom:20px"></div>
   <div style="background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:18px;width:100%;max-width:340px;margin-bottom:14px">
-    <div style="font-family:var(--f2);font-size:9px;color:var(--acc);letter-spacing:2px;text-align:center;margin-bottom:10px">PLANOS</div>
+    <div style="font-family:var(--f2);font-size:10px;color:var(--acc);letter-spacing:2px;text-align:center;margin-bottom:10px">PLANOS</div>
     <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;margin-bottom:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--t2)">Mensal</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--grn)">R$ 97</span></div>
     <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg);border:1px solid var(--amb);border-radius:6px;margin-bottom:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--amb)">Trimestral</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--amb)">R$ 247</span></div>
     <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg);border:1px solid var(--grn);border-radius:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--grn)">Anual</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--grn)">R$ 797</span></div>
   </div>
   <div style="background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;width:100%;max-width:340px;margin-bottom:14px;text-align:center">
-    <div style="font-family:var(--f2);font-size:9px;color:var(--acc);letter-spacing:2px;margin-bottom:8px">PIX</div>
+    <div style="font-family:var(--f2);font-size:10px;color:var(--acc);letter-spacing:2px;margin-bottom:8px">PIX</div>
     <div onclick="navigator.clipboard.writeText('62991704188');toast('Chave copiada!','ok')" style="font-family:var(--f2);font-size:15px;color:var(--t1);background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;margin:8px 0;cursor:pointer">62991704188</div>
     <div style="font-family:var(--f2);font-size:10px;color:var(--t3)">Jamis Costa da Silva</div>
-    <div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:4px">Toque pra copiar • Envie comprovante pelo WhatsApp</div>
+    <div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:4px">Toque pra copiar • Envie comprovante pelo WhatsApp</div>
   </div>
   <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px">
     <a href="https://wa.me/5562991704188?text=Ol%C3%A1!%20Quero%20assinar%20o%20SPECTRA.%20Segue%20comprovante%20PIX." target="_blank" style="display:block;width:100%;padding:13px;border-radius:8px;text-align:center;text-decoration:none;font-size:13px;font-weight:700;background:var(--grn);color:#000">💬 ASSINAR VIA WHATSAPP</a>
@@ -169,7 +169,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 <!-- SHELL -->
 <div class="shell" id="shell" style="display:none">
   <div class="topbar">
-    <div style="display:flex;align-items:center;gap:10px"><h1>SPECTRA</h1><span id="planBadge" style="font-family:var(--f2);font-size:8px;color:var(--acc);padding:2px 6px;background:var(--accd);border:1px solid var(--acc);border-radius:3px">SPEC MIND</span></div>
+    <div style="display:flex;align-items:center;gap:10px"><h1>SPECTRA</h1><span id="planBadge" style="font-family:var(--f2);font-size:10px;color:var(--acc);padding:2px 6px;background:var(--accd);border:1px solid var(--acc);border-radius:3px">SPEC MIND</span></div>
     <div class="topbar-r" id="topInfo">7 Pilares • IA</div>
   </div>
   <div class="content">
@@ -628,10 +628,8 @@ function loadUserData(){
     var ids={};merged.forEach(function(s){if(s&&s.id)ids[s.id]=true;});
     lsSigs.forEach(function(s){if(s&&s.id&&!ids[s.id]){merged.push(s);ids[s.id]=true;}});
     signals=merged;
-    console.log('[SPECTRA] Sinais: '+sbSigs.length+' nuvem + '+(signals.length-sbSigs.length)+' locais novos');
   }else{
     signals=lsSigs;
-    console.log('[SPECTRA] Sinais: '+signals.length+' do localStorage');
   }
 
   // Limpeza >30 dias + IDs faltando
@@ -675,7 +673,7 @@ function syncSignalsToCloud(){
   if(!sb||!curUser)return;
   sb.from('profiles').update({signals_data:JSON.stringify(signals)}).eq('id',curUser.id).then(function(r){
     if(r&&r.error)console.warn('[SPECTRA] Sync nuvem falhou:',r.error.message);
-    else console.log('[SPECTRA] '+signals.length+' sinais sincronizados');
+    else console.log('[SYNC] '+signals.length+' ok');
   });
 }
 
@@ -706,7 +704,6 @@ function exportData(){
 
 // ── GEMINI API CALL (via proxy — garante Telegram) ──
 async function callGemini(systemPrompt,userText,skipTg){
-  console.log('[SPECTRA] callGemini via PROXY'+(skipTg?' (no TG)':''));
   var controller=new AbortController();
   var timeout=setTimeout(function(){controller.abort()},60000);
   try{
@@ -715,16 +712,12 @@ async function callGemini(systemPrompt,userText,skipTg){
     // Inclui chat_id só se NÃO é auto-scan (manual analysis → Telegram direto)
     if(!skipTg&&curProfile&&curProfile.telegram_chat_id)payload.telegram_chat_id=curProfile.telegram_chat_id;
     if(skipTg)payload.send_telegram=false;
-    console.log('[SPECTRA] Enviando para:',proxy);
     var res=await fetch(proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
     clearTimeout(timeout);
-    console.log('[SPECTRA] Proxy respondeu — status:',res.status);
     if(!res.ok){var errTxt=await res.text();console.error('[SPECTRA] Proxy erro:',errTxt);throw new Error('Proxy '+res.status+': '+errTxt.substring(0,80));}
     var data=await res.json();
-    console.log('[SPECTRA] Proxy data keys:',Object.keys(data));
     if(data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts){
       var txt=data.candidates[0].content.parts.map(function(p){return p.text||''}).join('');
-      console.log('[SPECTRA] Texto recebido:',txt.substring(0,200)+'...');
       return txt;
     }
     if(data.content&&data.content[0]&&data.content[0].text)return data.content[0].text;
@@ -1077,7 +1070,7 @@ function togglePair(p,btn){
 }
 
 // ── TICKER ──
-async function fetchTicker(){try{var r=await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT"]');var d=await r.json();var h='';d.forEach(function(t){var n=t.symbol.replace('USDT',''),p=parseFloat(t.lastPrice),c=parseFloat(t.priceChangePercent);h+='<div style="flex-shrink:0;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;min-width:90px"><div style="font-family:var(--f2);font-size:10px;color:var(--t3)">'+n+'</div><div style="font-family:var(--f2);font-size:12px;font-weight:600;margin-top:1px">$'+(p<100?p.toFixed(2):p.toLocaleString("en-US",{maximumFractionDigits:0}))+'</div><div style="font-family:var(--f2);font-size:10px;font-weight:600;color:'+(c>=0?'var(--grn)':'var(--red)')+'">'+(c>=0?'▲':'▼')+Math.abs(c).toFixed(1)+'%</div></div>'});var el=document.getElementById('mTicker');if(el)el.innerHTML=h;d.forEach(function(t){if(t.symbol==='BTCUSDT'||t.symbol==='ETHUSDT'){var s=t.symbol==='BTCUSDT'?'BTC':'ETH';var p=parseFloat(t.lastPrice);var c=parseFloat(t.priceChangePercent);var pe=document.getElementById('dm'+s);if(pe)pe.textContent='$'+p.toLocaleString('en-US',{maximumFractionDigits:0});var ce=document.getElementById('dm'+s+'c');if(ce){ce.textContent=(c>=0?'▲':'▼')+Math.abs(c).toFixed(1)+'%';ce.style.color=c>=0?'var(--grn)':'var(--red)';}}});}catch(e){console.log('[SPECTRA] Ticker error:',e.message)}}
+async function fetchTicker(){try{var r=await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=["BTCUSDT","ETHUSDT","SOLUSDT","BNBUSDT","XRPUSDT"]');var d=await r.json();var h='';d.forEach(function(t){var n=t.symbol.replace('USDT',''),p=parseFloat(t.lastPrice),c=parseFloat(t.priceChangePercent);h+='<div style="flex-shrink:0;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;min-width:90px"><div style="font-family:var(--f2);font-size:10px;color:var(--t3)">'+n+'</div><div style="font-family:var(--f2);font-size:12px;font-weight:600;margin-top:1px">$'+(p<100?p.toFixed(2):p.toLocaleString("en-US",{maximumFractionDigits:0}))+'</div><div style="font-family:var(--f2);font-size:10px;font-weight:600;color:'+(c>=0?'var(--grn)':'var(--red)')+'">'+(c>=0?'▲':'▼')+Math.abs(c).toFixed(1)+'%</div></div>'});var el=document.getElementById('mTicker');if(el)el.innerHTML=h;d.forEach(function(t){if(t.symbol==='BTCUSDT'||t.symbol==='ETHUSDT'){var s=t.symbol==='BTCUSDT'?'BTC':'ETH';var p=parseFloat(t.lastPrice);var c=parseFloat(t.priceChangePercent);var pe=document.getElementById('dm'+s);if(pe)pe.textContent='$'+p.toLocaleString('en-US',{maximumFractionDigits:0});var ce=document.getElementById('dm'+s+'c');if(ce){ce.textContent=(c>=0?'▲':'▼')+Math.abs(c).toFixed(1)+'%';ce.style.color=c>=0?'var(--grn)':'var(--red)';}}});}catch(e){console.warn('[SPECTRA] Ticker:',e.message)}}
 
 // ── JSON EXTRACTOR ──
 function exJSON(t){if(!t)return null;var s=t.replace(/```json\s*/gi,'').replace(/```/g,'').replace(/<json>/gi,'').replace(/<\/json>/gi,'').replace(/\r?\n/g,' ').replace(/\t/g,' ').trim();var start=s.indexOf('{');if(start===-1)return null;var depth=0,inStr=false,esc=false,end=-1;for(var i=start;i<s.length;i++){var ch=s[i];if(esc){esc=false;continue;}if(ch==='\\'){esc=true;continue;}if(ch==='"'){inStr=!inStr;continue;}if(inStr)continue;if(ch==='{')depth++;if(ch==='}'){depth--;if(depth===0){end=i+1;break;}}}if(end<=start)return null;var j=s.substring(start,end).replace(/[\u0000-\u001f\u007f]/g,' ');try{return JSON.parse(j)}catch(e){try{return JSON.parse(j.replace(/,\s*}/g,'}').replace(/,\s*]/g,']'))}catch(e2){console.error('[SPECTRA] JSON parse failed:',j.substring(0,200));return null;}}}
@@ -1085,7 +1078,6 @@ function exJSON(t){if(!t)return null;var s=t.replace(/```json\s*/gi,'').replace(
 // ── MAPEAMENTO SPEC MIND → SPECTRA SIGNAL ──
 function mapSignal(raw,pair){
   if(!raw){console.error('[SPECTRA] mapSignal: raw is null');return null;}
-  console.log('[SPECTRA] mapSignal keys:',Object.keys(raw));
   if(raw.ativo||raw.direcao_dominante){
     var dir=raw.direcao_dominante||'LATERAL';
     var direcao=dir.indexOf('COMPRADOR')>-1?'LONG':dir.indexOf('VENDEDOR')>-1?'SHORT':'AGUARDAR';
@@ -1100,27 +1092,23 @@ function mapSignal(raw,pair){
     var stop=parseFloat(g.stop_loss)||0;
     var tp1=parseFloat(g.alvo_1)||0;
     if(direcao!=='AGUARDAR'&&(!entrada||!stop||!tp1)){
-      console.log('[SPECTRA] Dados incompletos — forçando AGUARDAR',{entrada:entrada,stop:stop,tp1:tp1});
       direcao='AGUARDAR';
       raw.veredicto='AGUARDAR';
       raw.narrativa=(raw.narrativa||'')+' Dados incompletos — aguardar setup válido.';
     }
     // ── BUG 2: ≤2 pilares = AGUARDAR (regra inviolável) ──
     if(direcao!=='AGUARDAR'&&fav<=2){
-      console.log('[SPECTRA] Só '+fav+' pilares — forçando AGUARDAR');
       direcao='AGUARDAR';
       raw.veredicto='AGUARDAR';
       raw.narrativa=(raw.narrativa||'')+' Apenas '+fav+' pilares — confluência insuficiente.';
     }
     // ── BUG 3: SHORT com TP acima da entrada = inválido (e vice-versa) ──
     if(direcao==='SHORT'&&tp1>0&&entrada>0&&tp1>entrada){
-      console.log('[SPECTRA] SHORT com TP1 acima da entrada — invertendo TP ou forçando AGUARDAR');
       direcao='AGUARDAR';
       raw.veredicto='AGUARDAR';
       raw.narrativa=(raw.narrativa||'')+' Dados inconsistentes (TP acima da entrada em SHORT).';
     }
     if(direcao==='LONG'&&tp1>0&&entrada>0&&tp1<entrada){
-      console.log('[SPECTRA] LONG com TP1 abaixo da entrada — forçando AGUARDAR');
       direcao='AGUARDAR';
       raw.veredicto='AGUARDAR';
       raw.narrativa=(raw.narrativa||'')+' Dados inconsistentes (TP abaixo da entrada em LONG).';
@@ -1134,7 +1122,6 @@ function mapSignal(raw,pair){
     }
     // ── R:R mínimo 2:1 — abaixo disso não opera ──
     if(rrNum>0&&rrNum<2&&direcao!=='AGUARDAR'){
-      console.log('[SPECTRA] R:R '+rrStr+' < 2:1 — forçando AGUARDAR');
       direcao='AGUARDAR';
       raw.veredicto='AGUARDAR';
       raw.narrativa=(raw.narrativa||'')+' R:R '+rrStr+' abaixo de 2:1 — sem edge.';
@@ -1151,7 +1138,6 @@ var lastExtLevels=null;
 var lastGoldenZone=null;
 var lastGZstatus='NÃO';
 async function buildMktStr(sym){
-  console.log('[SPECTRA] buildMktStr:',sym);
   try{
     var d=await fetchMarketData(sym,'240');
     lastExtLevels={e100:parseFloat(d.e100),e1272:parseFloat(d.e1272),e1414:parseFloat(d.e1414),e1618:parseFloat(d.e1618),e2270:parseFloat(d.e2270),e2414:parseFloat(d.e2414)};
@@ -1159,7 +1145,6 @@ async function buildMktStr(sym){
     lastGoldenZone={low:parseFloat(d.f786),high:parseFloat(d.f618)};
     lastGZstatus=d.gz||'NÃO';
     if(!d||!d.price)throw new Error('Sem dados da Binance para '+sym);
-    console.log('[SPECTRA] fetchMarketData OK — preço:',d.price);
   return sym+' 4H|Preço:'+d.price
     +'|GATE D:'+d.macdGate+' Line='+d.macdLineD+' Sig='+d.signalLineD+' Hist='+d.histD+'('+d.histTrendD+') Cross:'+d.macdCrossD+' Zero:'+d.macdZeroD
     +'|★FalhaD:'+d.macdFailD+' '+d.macdFailDescD+' Zona:'+d.macdFailZonaD
@@ -1183,15 +1168,12 @@ async function analisarUm(){
   var btn=document.getElementById('btnAn');
   btn.disabled=true;btn.style.opacity='0.6';btn.style.pointerEvents='none';btn.textContent='⏳ SPEC MIND ANALISANDO...';
   var st=document.getElementById('scanSt');st.style.display='block';
-  console.log('[SPECTRA] ══════ ANALISANDO:',pair,'══════');
   try{
     document.getElementById('scanTxt').textContent='Binance: puxando 700 candles...';
     startPillarAnim();
     var mkt=await buildMktStr(pair);
     document.getElementById('scanTxt').textContent='SPEC MIND: pode levar 10-30s...';
-    console.log('[SPECTRA] Chamando callGemini...');
     var text=await callGemini(SYSTEM_PROMPT,mkt);
-    console.log('[SPECTRA] Resposta recebida, extraindo JSON...');
     document.getElementById('scanTxt').textContent='Processando resultado...';
     stopPillarAnim();
     var raw=exJSON(text);
@@ -1210,7 +1192,6 @@ async function analisarUm(){
 
       // ── FIX 1: GZ check SÓ para LONG (para SHORT, GZ=NÃO é esperado) ──
       if(sig.direcao==='LONG'&&lastGZstatus.indexOf('NÃO')>-1){
-        console.log('[SPECTRA] LONG com GZ='+lastGZstatus+' → forçando AGUARDAR');
         sig.direcao='AGUARDAR';sig.veredicto='AGUARDAR';
         sig.motivo=(sig.motivo||'')+' Preço acima da Golden Zone — aguardar pullback.';
       }
@@ -1219,7 +1200,6 @@ async function analisarUm(){
       if(sig.direcao!=='AGUARDAR'){
         var narr=(sig.motivo||'').toLowerCase();
         if(narr.indexOf('aguardar')>-1||narr.indexOf('esperar pullback')>-1||narr.indexOf('timing passou')>-1||narr.indexOf('timing ideal')>-1&&narr.indexOf('passou')>-1||narr.indexOf('deslocado da zona')>-1||narr.indexOf('fora da zona de valor')>-1){
-          console.log('[SPECTRA] Narrativa contradiz veredicto → forçando AGUARDAR');
           sig.direcao='AGUARDAR';sig.veredicto='AGUARDAR';
         }
       }
@@ -1228,11 +1208,9 @@ async function analisarUm(){
       if(sig.direcao!=='AGUARDAR'&&sig.priceAtCreation>0){
         var pNow=sig.priceAtCreation;
         if(sig.direcao==='LONG'&&sig.tp1>0&&pNow>=sig.tp1){
-          console.log('[SPECTRA] Preço '+pNow+' já acima TP1 '+sig.tp1+' → sinal stale');
           sig.status='stale';sig.motivo=(sig.motivo||'')+' Preço já ultrapassou TP1 — sinal informativo apenas.';
         }
         if(sig.direcao==='SHORT'&&sig.tp1>0&&pNow<=sig.tp1){
-          console.log('[SPECTRA] Preço '+pNow+' já abaixo TP1 '+sig.tp1+' → sinal stale');
           sig.status='stale';sig.motivo=(sig.motivo||'')+' Preço já ultrapassou TP1 — sinal informativo apenas.';
         }
       }
@@ -1463,9 +1441,9 @@ function renderOpenSignals(open){
       }
     }
     h+='<div style="background:var(--bg2);border:1px solid var(--brd);border-left:3px solid '+dirCol+';border-radius:6px;padding:10px;margin-bottom:6px">';
-    h+='<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-family:var(--f2);font-size:13px;font-weight:700">'+(s.par||'').replace('USDT','')+' <span style="color:'+dirCol+';font-size:10px">'+dir+'</span></div><div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:2px">R:R '+(s.rr||'—')+' • '+(s.estrelas||'')+'</div></div>';
-    h+='<div style="text-align:right"><div style="font-family:var(--f2);font-size:11px;font-weight:600">'+(s.livePrice?f(s.livePrice):f(s.entrada))+'</div><div style="font-family:var(--f2);font-size:9px;color:'+proxCol+';margin-top:2px">'+prox+'</div></div></div>';
-    h+='<div style="font-family:var(--f2);font-size:10px;margin-top:6px;padding-top:6px;border-top:1px solid var(--brd);color:var(--t3)">'+prog+' <span style="margin-left:4px;font-size:9px">'+(s.tp2_hit?'TP2 atingido':s.tp1_hit?'TP1 atingido':'aguardando TP1')+'</span></div>';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-family:var(--f2);font-size:13px;font-weight:700">'+(s.par||'').replace('USDT','')+' <span style="color:'+dirCol+';font-size:10px">'+dir+'</span></div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:2px">R:R '+(s.rr||'—')+' • '+(s.estrelas||'')+'</div></div>';
+    h+='<div style="text-align:right"><div style="font-family:var(--f2);font-size:11px;font-weight:600">'+(s.livePrice?f(s.livePrice):f(s.entrada))+'</div><div style="font-family:var(--f2);font-size:10px;color:'+proxCol+';margin-top:2px">'+prox+'</div></div></div>';
+    h+='<div style="font-family:var(--f2);font-size:10px;margin-top:6px;padding-top:6px;border-top:1px solid var(--brd);color:var(--t3)">'+prog+' <span style="margin-left:4px;font-size:10px">'+(s.tp2_hit?'TP2 atingido':s.tp1_hit?'TP1 atingido':'aguardando TP1')+'</span></div>';
     h+='</div>';
   });
   el.innerHTML=h;
@@ -1493,8 +1471,8 @@ function renderRecentResults(closed){
     }
     var when=s.closedAt?new Date(s.closedAt).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg2);border:1px solid var(--brd);border-radius:6px;margin-bottom:4px">';
-    h+='<div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px">'+icon+'</span><span style="font-family:var(--f2);font-size:12px;font-weight:700">'+(s.par||'').replace('USDT','')+'</span><span style="font-family:var(--f2);font-size:9px;color:'+col+';padding:2px 6px;background:'+col+'22;border-radius:3px">'+lbl+'</span></div>';
-    h+='<div style="text-align:right"><div style="font-family:var(--f2);font-size:12px;font-weight:700;color:'+col+'">'+(pct>=0?'+':'')+pct.toFixed(2)+'%</div><div style="font-family:var(--f2);font-size:8px;color:var(--t3)">'+when+'</div></div>';
+    h+='<div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px">'+icon+'</span><span style="font-family:var(--f2);font-size:12px;font-weight:700">'+(s.par||'').replace('USDT','')+'</span><span style="font-family:var(--f2);font-size:10px;color:'+col+';padding:2px 6px;background:'+col+'22;border-radius:3px">'+lbl+'</span></div>';
+    h+='<div style="text-align:right"><div style="font-family:var(--f2);font-size:12px;font-weight:700;color:'+col+'">'+(pct>=0?'+':'')+pct.toFixed(2)+'%</div><div style="font-family:var(--f2);font-size:10px;color:var(--t3)">'+when+'</div></div>';
     h+='</div>';
   });
   el.innerHTML=h;
@@ -1557,7 +1535,7 @@ async function checkOpenTrades(){
       }
     });
     if(changed){saveSigs();renderSignals();updateDash();}
-  }catch(e){console.log('[SPECTRA] Monitor:',e.message)}
+  }catch(e){console.warn('[SPECTRA] Monitor:',e.message)}
 }
 
 // Notifica Telegram em cada milestone
@@ -1698,7 +1676,7 @@ function renderPerf(){
     var tm=s.time?new Date(s.time).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+new Date(s.time).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
     var cat=CATS[(s.par||'').replace('/','')]||'';
     h+='<div style="background:var(--bg2);border:1px solid var(--brd);border-left:3px solid '+bCol+';border-radius:10px;padding:14px;margin-bottom:10px">';
-    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:15px;font-weight:700">'+(s.par||'').replace('USDT','')+'</span><span style="font-family:var(--f2);font-size:9px;padding:2px 6px;border-radius:3px;background:'+(dir==='LONG'?'var(--grnd)':'var(--redd)')+';color:'+(dir==='LONG'?'var(--grn)':'var(--red)')+'">'+dir+'</span><span style="font-family:var(--f2);font-size:9px;padding:2px 6px;border-radius:3px;background:'+stColor+'22;color:'+stColor+'">'+stLabel+'</span>'+(cat?'<span style="font-family:var(--f2);font-size:8px;color:'+(catColors[cat]||'var(--t3)')+'">'+cat+'</span>':'')+'</div><span style="font-family:var(--f2);font-size:9px;color:var(--t3)">'+tm+'</span></div>';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:15px;font-weight:700">'+(s.par||'').replace('USDT','')+'</span><span style="font-family:var(--f2);font-size:10px;padding:2px 6px;border-radius:3px;background:'+(dir==='LONG'?'var(--grnd)':'var(--redd)')+';color:'+(dir==='LONG'?'var(--grn)':'var(--red)')+'">'+dir+'</span><span style="font-family:var(--f2);font-size:10px;padding:2px 6px;border-radius:3px;background:'+stColor+'22;color:'+stColor+'">'+stLabel+'</span>'+(cat?'<span style="font-family:var(--f2);font-size:10px;color:'+(catColors[cat]||'var(--t3)')+'">'+cat+'</span>':'')+'</div><span style="font-family:var(--f2);font-size:10px;color:var(--t3)">'+tm+'</span></div>';
     h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">';
     h+='<div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:8px;text-align:center"><div style="font-family:var(--f2);font-size:10px;color:var(--t3)">ENTRADA</div><div style="font-family:var(--f2);font-size:12px;font-weight:600">'+f(s.entrada)+'</div></div>';
     h+='<div style="background:var(--bg);border:1px solid var(--red)44;border-radius:6px;padding:8px;text-align:center"><div style="font-family:var(--f2);font-size:10px;color:var(--red)">STOP <span style="opacity:.6;font-size:9px">'+pctE(s.stop)+'</span></div><div style="font-family:var(--f2);font-size:12px;font-weight:600;color:var(--red)">'+f(s.stop)+'</div></div>';
@@ -1706,7 +1684,7 @@ function renderPerf(){
     if(s.closePrice){var resPct=s.entrada?((s.closePrice-s.entrada)/s.entrada*100):0;if(dir==='SHORT')resPct=-resPct;h+='<div style="display:flex;justify-content:space-between;padding:6px 0"><span style="font-family:var(--f2);font-size:12px;color:var(--t2)">Fechou: <strong style="color:'+stColor+'">'+f(s.closePrice)+'</strong> <span style="color:'+(resPct>=0?'var(--grn)':'var(--red)')+'">'+(resPct>=0?'+':'')+resPct.toFixed(2)+'%</span></span><span style="font-family:var(--f2);font-size:11px;color:var(--amb)">R:R '+(s.rr||'—')+'</span></div>';}
     else if(isOpen&&s.livePrice){var lp=s.entrada?((s.livePrice-s.entrada)/s.entrada*100):0;if(dir==='SHORT')lp=-lp;h+='<div style="padding:4px 0"><span style="font-family:var(--f2);font-size:11px;color:var(--acc)">Atual: '+f(s.livePrice)+' <span style="color:'+(lp>=0?'var(--grn)':'var(--red)')+'">'+(lp>=0?'+':'')+lp.toFixed(2)+'%</span></span></div>';}
     h+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font-family:var(--f2);font-size:10px;color:var(--amb)">'+(s.estrelas||'')+'</span><span style="font-family:var(--f2);font-size:10px;color:var(--amb)">R:R '+(s.rr||'—')+'</span></div>';
-    if(s.motivo){h+='<div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;margin-top:8px"><div style="font-family:var(--f2);font-size:9px;color:var(--acc);margin-bottom:4px">◆ FEEDBACK SPEC MIND</div><div style="font-size:12px;color:var(--t2);line-height:1.6;word-break:break-word">'+s.motivo+'</div></div>';}
+    if(s.motivo){h+='<div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;margin-top:8px"><div style="font-family:var(--f2);font-size:10px;color:var(--acc);margin-bottom:4px">◆ FEEDBACK SPEC MIND</div><div style="font-size:12px;color:var(--t2);line-height:1.6;word-break:break-word">'+s.motivo+'</div></div>';}
     h+='</div>';
   });
   document.getElementById('perfList').innerHTML=h;
@@ -1779,22 +1757,21 @@ function startAutoScan(){
   var st=document.getElementById('autoStatus');
   if(st)st.style.color='var(--grn)';
 
-  var lastScan=parseInt(localStorage.getItem(uKey('last_scan'))||'0');
+  // Último scan: usa o MAIS RECENTE entre Supabase (nuvem) e localStorage (local)
+  var lsLast=parseInt(localStorage.getItem(uKey('last_scan'))||'0');
+  var sbLast=curProfile&&curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
+  var lastScan=Math.max(lsLast,sbLast);
   var elapsed=Date.now()-lastScan;
   var intervalMs=autoIntervalMin*60*1000;
   var remaining=Math.max(0,intervalMs-elapsed);
 
   if(remaining<=0){
-    // Já passou o intervalo — roda agora
     autoLog('Scan necessário (último há '+Math.round(elapsed/60000)+' min)');
     runAutoScan();
-    // Agenda próximo no intervalo completo
     autoScanTimer=setInterval(runAutoScan,intervalMs);
     startCountdown(intervalMs);
   }else{
-    // Ainda não passou — agenda pro tempo restante
-    autoLog('Próximo scan em '+Math.round(remaining/60000)+' min (Worker cuida em background)');
-    // Primeiro disparo no tempo restante, depois intervalo completo
+    autoLog('Próximo scan em '+Math.round(remaining/60000)+' min');
     autoScanTimer=setTimeout(function(){
       runAutoScan();
       autoScanTimer=setInterval(runAutoScan,intervalMs);
@@ -1826,7 +1803,10 @@ function startCountdown(ms){
 
 async function runAutoScan(){
   if(isAnalyzing){autoLog('Análise em andamento — scan adiado');return;}
+  // Salva timestamp em AMBOS (localStorage + Supabase)
+  var nowISO=new Date().toISOString();
   localStorage.setItem(uKey('last_scan'),Date.now().toString());
+  if(sb&&curUser){sb.from('profiles').update({last_scan_at:nowISO}).eq('id',curUser.id);if(curProfile)curProfile.last_scan_at=nowISO;}
   autoLog('Scan: '+monitored.length+' pares');
   var found=0;
   for(var i=0;i<monitored.length;i++){
@@ -1957,7 +1937,6 @@ function checkTrialWarning(){
 }
 
 // ── INIT ──
-console.log('[SPECTRA] Init — signals:',signals.length,'monitored:',monitored.length,'mode:PROXY');
 popPairSel();
 
 </script>
