@@ -654,8 +654,9 @@ function loadUserData(){
 
 function genSigId(){return Date.now().toString(36)+Math.random().toString(36).substring(2,7);}
 
-// ── SAVE SIGNALS: localStorage (instante) + Supabase (debounce 5s) ──
+// ── SAVE SIGNALS: localStorage (instante) + Supabase (debounce 2s + force on exit) ──
 var _syncTimer=null;
+var _syncDirty=false;
 function saveSigs(){
   try{localStorage.setItem(uKey('sig'),JSON.stringify(signals));}
   catch(e){
@@ -664,18 +665,34 @@ function saveSigs(){
     try{localStorage.setItem(uKey('sig'),JSON.stringify(signals));}
     catch(e2){toast('Armazenamento cheio','err');}
   }
-  // Debounce Supabase: espera 5s sem novas chamadas
+  _syncDirty=true;
   if(_syncTimer)clearTimeout(_syncTimer);
-  _syncTimer=setTimeout(syncSignalsToCloud,5000);
+  _syncTimer=setTimeout(syncSignalsToCloud,2000);
+}
+
+// Sync forçado em eventos importantes (não depende do debounce)
+function saveSigsNow(){
+  saveSigs();
+  syncSignalsToCloud();
 }
 
 function syncSignalsToCloud(){
-  if(!sb||!curUser)return;
+  if(!sb||!curUser||!_syncDirty)return;
+  _syncDirty=false;
   sb.from('profiles').update({signals_data:JSON.stringify(signals)}).eq('id',curUser.id).then(function(r){
-    if(r&&r.error)console.warn('[SPECTRA] Sync nuvem falhou:',r.error.message);
-    else console.log('[SYNC] '+signals.length+' ok');
+    if(r&&r.error){_syncDirty=true;console.warn('[SPECTRA] Sync falhou:',r.error.message);}
   });
 }
+
+// Sync quando o app vai pro background ou fecha
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='hidden'&&_syncDirty)syncSignalsToCloud();
+});
+window.addEventListener('beforeunload',function(){
+  if(_syncDirty)syncSignalsToCloud();
+});
+// Sync periódico a cada 30s como safety net
+setInterval(function(){if(_syncDirty)syncSignalsToCloud();},30000);
 
 function saveMon(){
   try{localStorage.setItem(uKey('mon'),JSON.stringify(monitored));}catch(e){}
@@ -1223,7 +1240,7 @@ async function analisarUm(){
       if(lastGoldenZone){
         sig.regEntrada=[lastGoldenZone.low,lastGoldenZone.high];
       }
-      signals.unshift(sig);signals=signals.slice(0,100);saveSigs();
+      signals.unshift(sig);signals=signals.slice(0,100);saveSigsNow();
       var msg=pair.replace('USDT','')+' → '+(sig.direcao||'OK')+(sig.status==='stale'?' (informativo)':'')+' '+(sig.estrelas||'');
       toast(msg,sig.status==='stale'?'inf':'ok');alertBeep(sig);
     }else{toast('Par não reconhecido pela IA — tente outro','err');}
@@ -1534,7 +1551,7 @@ async function checkOpenTrades(){
         notifyMilestone(s,'TP1');
       }
     });
-    if(changed){saveSigs();renderSignals();updateDash();}
+    if(changed){saveSigsNow();renderSignals();updateDash();}
   }catch(e){console.warn('[SPECTRA] Monitor:',e.message)}
 }
 
@@ -1826,13 +1843,13 @@ async function runAutoScan(){
         sig.status='open';
         var dir=(sig.direcao||'').toUpperCase();
         if(dir==='LONG'||dir==='SHORT'){
-          signals.unshift(sig);signals=signals.slice(0,100);saveSigs();
+          signals.unshift(sig);signals=signals.slice(0,100);saveSigsNow();
           found++;
           alertBeep(sig);
           autoLog('✅ '+pair.replace('USDT','')+' → '+dir+' R:R '+(sig.rr||'—'));
         }else{
           // AGUARDAR — salva mas não conta como operável
-          signals.unshift(sig);signals=signals.slice(0,100);saveSigs();
+          signals.unshift(sig);signals=signals.slice(0,100);saveSigsNow();
           autoLog('◆ '+pair.replace('USDT','')+' → AGUARDAR');
         }
       }
