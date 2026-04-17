@@ -618,20 +618,34 @@ function safeJSON(raw,fallback){
 }
 
 function loadUserData(){
-  // Sinais com limpeza automática de >30 dias
-  var rawSigs=localStorage.getItem(uKey('sig'));
-  var all=safeJSON(rawSigs,[]);
+  // ── SINAIS: Supabase (nuvem) > localStorage (cache local) ──
+  var sbSigs=curProfile&&curProfile.signals_data?safeJSON(curProfile.signals_data,null):null;
+  var lsSigs=safeJSON(localStorage.getItem(uKey('sig')),[]);
+
+  if(sbSigs&&Array.isArray(sbSigs)&&sbSigs.length>0){
+    // Merge: Supabase como base + sinais locais novos (dedup por ID)
+    var merged=sbSigs.slice();
+    var ids={};merged.forEach(function(s){if(s&&s.id)ids[s.id]=true;});
+    lsSigs.forEach(function(s){if(s&&s.id&&!ids[s.id]){merged.push(s);ids[s.id]=true;}});
+    signals=merged;
+    console.log('[SPECTRA] Sinais: '+sbSigs.length+' nuvem + '+(signals.length-sbSigs.length)+' locais novos');
+  }else{
+    signals=lsSigs;
+    console.log('[SPECTRA] Sinais: '+signals.length+' do localStorage');
+  }
+
+  // Limpeza >30 dias + IDs faltando
   var cutoff=Date.now()-(30*24*3600000);
-  signals=all.filter(function(s){
+  var before=signals.length;
+  signals=signals.filter(function(s){
     if(!s)return false;
     var t=s.time?new Date(s.time).getTime():0;
     return isNaN(t)||t>=cutoff;
   });
-  // Adiciona ID único se falta
   signals.forEach(function(s){if(!s.id)s.id=genSigId();});
-  if(signals.length!==all.length)saveSigs(); // persiste limpeza
+  if(signals.length!==before)saveSigs();
 
-  // Supabase > localStorage
+  // ── MONITORED: Supabase > localStorage ──
   if(curProfile&&curProfile.monitored_pairs){
     var mp=safeJSON(curProfile.monitored_pairs,null);
     monitored=Array.isArray(mp)&&mp.length?mp:['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
@@ -640,30 +654,40 @@ function loadUserData(){
   }
 }
 
-// ID único pra sinal (evita duplicação ao sincronizar)
 function genSigId(){return Date.now().toString(36)+Math.random().toString(36).substring(2,7);}
 
+// ── SAVE SIGNALS: localStorage (instante) + Supabase (debounce 5s) ──
+var _syncTimer=null;
 function saveSigs(){
   try{localStorage.setItem(uKey('sig'),JSON.stringify(signals));}
   catch(e){
-    // localStorage cheio — remove últimos 50 e tenta de novo
     console.warn('[SPECTRA] localStorage full, trimming');
     signals=signals.slice(0,50);
     try{localStorage.setItem(uKey('sig'),JSON.stringify(signals));}
-    catch(e2){toast('Armazenamento cheio — limpe trades antigos','err');}
+    catch(e2){toast('Armazenamento cheio','err');}
   }
+  // Debounce Supabase: espera 5s sem novas chamadas
+  if(_syncTimer)clearTimeout(_syncTimer);
+  _syncTimer=setTimeout(syncSignalsToCloud,5000);
+}
+
+function syncSignalsToCloud(){
+  if(!sb||!curUser)return;
+  sb.from('profiles').update({signals_data:JSON.stringify(signals)}).eq('id',curUser.id).then(function(r){
+    if(r&&r.error)console.warn('[SPECTRA] Sync nuvem falhou:',r.error.message);
+    else console.log('[SPECTRA] '+signals.length+' sinais sincronizados');
+  });
 }
 
 function saveMon(){
   try{localStorage.setItem(uKey('mon'),JSON.stringify(monitored));}catch(e){}
   if(sb&&curUser){
     sb.from('profiles').update({monitored_pairs:JSON.stringify(monitored)}).eq('id',curUser.id).then(function(r){
-      if(r&&r.error)console.warn('[SPECTRA] Supabase sync failed:',r.error.message);
+      if(r&&r.error)console.warn('[SPECTRA] Sync failed:',r.error.message);
     });
   }
 }
 
-// Export dados (LGPD — portabilidade)
 function exportData(){
   if(!curProfile){toast('Faça login primeiro','err');return;}
   var dump={
@@ -1282,8 +1306,19 @@ function renderSignals(){
     if(s.motivo)h+='<div style="margin:8px 14px;padding:8px 0;border-top:1px solid var(--brd);font-size:13px;color:var(--t2);line-height:1.6">💡 '+s.motivo+'</div>';
     // Pills
     h+='<div style="padding:0 14px 6px"><div class="sig-pills">'+pills+'</div></div>';
+    // Timeline (timestamps + preços de cada etapa — auditável)
+    var fDate=function(iso){if(!iso)return'—';var d=new Date(iso);return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+    var fP=function(v){if(!v||v===0)return'';return' @ '+f(v)};
+    h+='<div style="margin:0 14px 8px;padding:8px 10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;font-family:var(--f2);font-size:10px;color:var(--t3);line-height:2">';
+    h+='<div>🕐 Sinal: <span style="color:var(--t1)">'+fDate(s.time)+'</span></div>';
+    if(s.tp1_hit)h+='<div>✅ TP1: <span style="color:var(--grn)">'+fDate(s.tp1_at)+'</span><span style="color:var(--t2)">'+fP(s.tp1_price)+'</span></div>';
+    if(s.tp2_hit)h+='<div>✅✅ TP2: <span style="color:var(--grn)">'+fDate(s.tp2_at)+'</span><span style="color:var(--t2)">'+fP(s.tp2_price)+'</span></div>';
+    if(s.status==='tp3')h+='<div>✅✅✅ TP3: <span style="color:var(--grn)">'+fDate(s.tp3_at)+'</span><span style="color:var(--t2)">'+fP(s.tp3_price)+'</span></div>';
+    if(s.status==='sl')h+='<div>❌ Stop: <span style="color:var(--red)">'+fDate(s.closedAt)+'</span><span style="color:var(--t2)">'+fP(s.closePrice)+'</span></div>';
+    if(s.closedAt&&s.time){var dur=Math.round((new Date(s.closedAt)-new Date(s.time))/60000);var durTxt=dur>=60?Math.floor(dur/60)+'h'+String(dur%60).padStart(2,'0')+'m':dur+'min';h+='<div>⏱ Duração: <span style="color:var(--amb)">'+durTxt+'</span></div>';}
+    h+='</div>';
     // Footer
-    h+='<div class="sig-meta" style="padding:0 14px 8px"><span>'+time+' • R:R '+(s.rr||'—')+'</span></div>';
+    h+='<div class="sig-meta" style="padding:0 14px 8px"><span>R:R '+(s.rr||'—')+'</span>'+(s.status==='open'?'<span style="color:var(--acc)">● ABERTO</span>':s.status==='stale'?'<span style="color:var(--t3)">● INFORMATIVO</span>':s.status==='tp3'?'<span style="color:var(--grn)">✅ COMPLETO</span>':s.status==='sl'?'<span style="color:var(--red)">❌ STOP</span>':'')+'</div>';
     h+='</div>';
   });
   document.getElementById('sigList').innerHTML=h;
@@ -1493,30 +1528,31 @@ async function checkOpenTrades(){
       s.livePrice=p;
       var dir=(s.direcao||'').toUpperCase();
       var isLong=dir==='LONG';
+      var now=new Date().toISOString();
 
       // ── STOP: fecha trade definitivamente ──
-      if(isLong&&s.stop&&p<=s.stop){s.status='sl';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;notifyMilestone(s,'STOP');return;}
-      if(!isLong&&s.stop&&p>=s.stop){s.status='sl';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;notifyMilestone(s,'STOP');return;}
+      if(isLong&&s.stop&&p<=s.stop){s.status='sl';s.closePrice=p;s.closedAt=now;changed=true;notifyMilestone(s,'STOP');return;}
+      if(!isLong&&s.stop&&p>=s.stop){s.status='sl';s.closePrice=p;s.closedAt=now;changed=true;notifyMilestone(s,'STOP');return;}
 
       // ── TP3: fecha trade com lucro máximo ──
       if(s.tp3&&((isLong&&p>=s.tp3)||(!isLong&&p<=s.tp3))){
-        if(!s.tp1_hit){s.tp1_hit=true;s.tp1_at=new Date().toISOString();}
-        if(!s.tp2_hit){s.tp2_hit=true;s.tp2_at=new Date().toISOString();}
-        s.tp3_hit=true;s.tp3_at=new Date().toISOString();
-        s.status='tp3';s.closePrice=p;s.closedAt=new Date().toISOString();changed=true;
+        if(!s.tp1_hit){s.tp1_hit=true;s.tp1_at=now;s.tp1_price=p;}
+        if(!s.tp2_hit){s.tp2_hit=true;s.tp2_at=now;s.tp2_price=p;}
+        s.tp3_hit=true;s.tp3_at=now;s.tp3_price=p;
+        s.status='tp3';s.closePrice=p;s.closedAt=now;changed=true;
         notifyMilestone(s,'TP3');return;
       }
 
       // ── TP2: atualiza mas NÃO fecha ──
       if(s.tp2&&!s.tp2_hit&&((isLong&&p>=s.tp2)||(!isLong&&p<=s.tp2))){
-        if(!s.tp1_hit){s.tp1_hit=true;s.tp1_at=new Date().toISOString();}
-        s.tp2_hit=true;s.tp2_at=new Date().toISOString();changed=true;
+        if(!s.tp1_hit){s.tp1_hit=true;s.tp1_at=now;s.tp1_price=p;}
+        s.tp2_hit=true;s.tp2_at=now;s.tp2_price=p;changed=true;
         notifyMilestone(s,'TP2');
       }
 
       // ── TP1: atualiza mas NÃO fecha ──
       if(s.tp1&&!s.tp1_hit&&((isLong&&p>=s.tp1)||(!isLong&&p<=s.tp1))){
-        s.tp1_hit=true;s.tp1_at=new Date().toISOString();changed=true;
+        s.tp1_hit=true;s.tp1_at=now;s.tp1_price=p;changed=true;
         notifyMilestone(s,'TP1');
       }
     });
@@ -1529,30 +1565,36 @@ function notifyMilestone(s,milestone){
   var chatId=(curProfile&&curProfile.telegram_chat_id)?curProfile.telegram_chat_id:'';
   if(!chatId||!s.entrada||s.entrada<=0)return;
   var isFinal=(milestone==='TP3'||milestone==='STOP');
-  var isWin=milestone!=='STOP';
   var icon=milestone==='STOP'?'❌':milestone==='TP3'?'✅✅✅':milestone==='TP2'?'✅✅':'✅';
   var name=(s.par||'').replace('USDT','');
   var dirIcon=s.direcao==='LONG'?'🟢':'🔴';
   var f=function(v){return v&&v!==0?Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6}):'—'};
   var pct=s.livePrice?((s.livePrice-s.entrada)/s.entrada*100):0;
   if(s.direcao==='SHORT')pct=-pct;
-  // Barra de progresso visual
-  var prog='';
-  prog+=(s.tp1_hit?'✅':'⬜')+' TP1  ';
-  prog+=(s.tp2_hit?'✅':'⬜')+' TP2  ';
-  prog+=(s.tp3_hit?'✅':'⬜')+' TP3';
+  var fTime=function(iso){if(!iso)return'—';return new Date(iso).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+  // Duração desde abertura
+  var durTxt='';
+  if(s.time){var dur=Math.round((Date.now()-new Date(s.time).getTime())/60000);durTxt=dur>=60?Math.floor(dur/60)+'h'+String(dur%60).padStart(2,'0')+'m':dur+'min';}
+  // Barra de progresso
+  var prog=(s.tp1_hit?'✅':'⬜')+' TP1  '+(s.tp2_hit?'✅':'⬜')+' TP2  '+(s.tp3_hit?'✅':'⬜')+' TP3';
 
-  var msg=icon+' <b>'+(isFinal?(milestone==='STOP'?'STOP LOSS':'TRADE COMPLETO — '+milestone):milestone+' ATINGIDO')+'</b>\n\n';
+  var msg=icon+' <b>'+(isFinal?(milestone==='STOP'?'STOP LOSS':'TRADE COMPLETO'):'ALVO ATINGIDO — '+milestone)+'</b>\n\n';
   msg+=dirIcon+' <b>'+name+'/USDT</b> '+s.direcao+'\n';
   msg+='━━━━━━━━━━━━━━━━━━\n';
   msg+='📍 Entrada:    <code>'+f(s.entrada)+'</code>\n';
   msg+='📊 Atual:      <code>'+f(s.livePrice)+'</code> <b>'+(pct>=0?'+':'')+pct.toFixed(2)+'%</b>\n';
   msg+=prog+'\n';
+  msg+='━━━━━━━━━━━━━━━━━━\n';
+  msg+='🕐 Abriu: '+fTime(s.time)+'\n';
+  if(s.tp1_at)msg+='✅ TP1: '+fTime(s.tp1_at)+' @ <code>'+f(s.tp1_price)+'</code>\n';
+  if(s.tp2_at)msg+='✅ TP2: '+fTime(s.tp2_at)+' @ <code>'+f(s.tp2_price)+'</code>\n';
   if(isFinal){
-    msg+='━━━━━━━━━━━━━━━━━━\n';
-    msg+='🏁 Resultado: <b>'+(pct>=0?'+':'')+pct.toFixed(2)+'%</b>\n';
+    msg+=(milestone==='STOP'?'❌':'✅')+' '+milestone+': '+fTime(new Date().toISOString())+' @ <code>'+f(s.livePrice)+'</code>\n';
+    msg+='⏱ Duração: <b>'+durTxt+'</b>\n';
+    msg+='🏁 Resultado: <b>'+(pct>=0?'+':'')+pct.toFixed(2)+'%</b>';
+  }else{
+    msg+='⏱ Em curso: '+durTxt;
   }
-  msg+='⏰ '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 
   fetch(PROXIES[0]+'/send-signal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,chat_id:chatId})}).catch(function(){});
 }
