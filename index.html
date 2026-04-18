@@ -243,10 +243,14 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
     </div>
     <!-- SINAIS -->
     <div class="page" id="pg-sig">
-      <div style="margin-bottom:12px">
+      <div style="margin-bottom:12px;position:relative">
         <label style="font-family:var(--f2);font-size:10px;color:var(--t3);letter-spacing:1.5px;display:block;margin-bottom:6px">SELECIONE O PAR</label>
-        <select id="sigPair" style="width:100%;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:14px 16px;color:var(--t1);font-family:var(--f2);font-size:14px;outline:none;margin-bottom:10px;cursor:pointer;appearance:auto"></select>
-        <button id="btnAn" onclick="analisarUm()" style="width:100%;padding:16px;background:var(--grd);border:none;border-radius:10px;color:#000;font-family:var(--f1);font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden">⚡ ANALISAR COM SPEC MIND</button>
+        <input type="text" id="sigSearch" placeholder="🔍 Buscar par... (ex: BTC, SOL, PEPE)" autocomplete="off" oninput="filterSigPairs()" onfocus="showSigDropdown()" style="width:100%;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:14px 16px;color:var(--t1);font-family:var(--f2);font-size:14px;outline:none;box-sizing:border-box">
+        <input type="hidden" id="sigPair" value="">
+        <div id="sigDropdown" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:100;max-height:250px;overflow-y:auto;background:var(--bg2);border:1px solid var(--brd);border-radius:0 0 10px 10px;margin-top:-1px"></div>
+        <div style="margin-top:10px">
+          <button id="btnAn" onclick="analisarUm()" style="width:100%;padding:16px;background:var(--grd);border:none;border-radius:10px;color:#000;font-family:var(--f1);font-size:15px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden">⚡ ANALISAR COM SPEC MIND</button>
+        </div>
       </div>
       <div id="scanSt" style="display:none;text-align:center;padding:8px;font-family:var(--f2);font-size:10px;color:var(--acc);margin-bottom:6px"><div class="ld" style="margin-right:6px;vertical-align:middle"></div><span id="scanTxt">Analisando...</span></div>
       <!-- PILLAR ANIMATION -->
@@ -1006,7 +1010,36 @@ var CATS={
 // ── NAVIGATION ──
 function goPage(id,btn){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on')});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('pg-'+id).classList.add('on');btn.classList.add('on');if(id==='sig')popPairSel();if(id==='res')renderPerf();if(id==='alert')filterPairs();}
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast on '+(t||'ok');setTimeout(function(){el.classList.remove('on')},4000);}
-function popPairSel(){var s=document.getElementById('sigPair');if(!s)return;var h='<option value="">Selecione o par...</option>';ALL_PAIRS.forEach(function(p){h+='<option value="'+p+'">'+p.replace('USDT',' / USDT')+'</option>'});s.innerHTML=h;}
+function popPairSel(){filterSigPairs();}
+function filterSigPairs(){
+  var q=(document.getElementById('sigSearch').value||'').toUpperCase().trim();
+  var dd=document.getElementById('sigDropdown');if(!dd)return;
+  var list=ALL_PAIRS.filter(function(p){return!q||p.indexOf(q)>-1});
+  if(!q&&list.length>20)list=list.slice(0,30); // show first 30 when empty
+  var h='';list.forEach(function(p){
+    var n=p.replace('USDT',''),cat=CATS[p]||'';
+    var cc=cat==='L1'?'var(--acc)':cat==='MEME'?'var(--amb)':cat==='DEFI'?'var(--grn)':cat==='AI'?'#B388FF':cat==='GAME'?'#FFD740':'var(--t3)';
+    h+='<div onclick="selectSigPair(\''+p+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--brd)" ontouchstart="this.style.background=\'var(--bg)\'" ontouchend="this.style.background=\'none\'" onmouseenter="this.style.background=\'var(--bg)\'" onmouseleave="this.style.background=\'none\'"><span style="font-family:var(--f2);font-size:13px;color:var(--t1)">'+n+' / USDT</span><span style="font-family:var(--f2);font-size:10px;color:'+cc+';padding:1px 5px;background:'+cc+'22;border-radius:3px">'+cat+'</span></div>';
+  });
+  if(!h)h='<div style="padding:14px;text-align:center;font-family:var(--f2);font-size:11px;color:var(--t3)">Nenhum par encontrado</div>';
+  dd.innerHTML=h;
+  if(q)dd.style.display='block';
+}
+function selectSigPair(pair){
+  document.getElementById('sigPair').value=pair;
+  document.getElementById('sigSearch').value=pair.replace('USDT',' / USDT');
+  document.getElementById('sigDropdown').style.display='none';
+}
+function showSigDropdown(){
+  document.getElementById('sigDropdown').style.display='block';
+  filterSigPairs();
+}
+// Close dropdown when clicking outside
+document.addEventListener('click',function(e){
+  var dd=document.getElementById('sigDropdown');
+  var si=document.getElementById('sigSearch');
+  if(dd&&si&&!dd.contains(e.target)&&e.target!==si)dd.style.display='none';
+});
 
 // ── ALERTAS/PARES ──
 function filterPairs(){var q=(document.getElementById('searchPair')?document.getElementById('searchPair').value:'').toUpperCase();var list=ALL_PAIRS.filter(function(p){return(!q||p.indexOf(q)>-1)&&(aFilt==='ALL'||(CATS[p]||'')==aFilt)});var h='';list.forEach(function(p){var n=p.replace('USDT',''),on=monitored.indexOf(p)>-1,cat=CATS[p]||'',cc=cat==='L1'?'var(--acc)':cat==='L2'?'#64FFDA':cat==='MEME'?'var(--amb)':cat==='DEFI'?'var(--grn)':cat==='AI'?'#B388FF':cat==='INFRA'?'#FF8A65':cat==='GAME'?'#FFD740':cat==='RWA'?'#80DEEA':'var(--t3)';h+='<div class="al"><div class="al-left"><span class="al-sym">'+n+'</span><span style="font-family:var(--f2);font-size:10px;color:'+cc+';margin-left:6px;padding:1px 5px;background:'+cc+'22;border-radius:3px">'+cat+'</span></div><button class="al-toggle'+(on?' on':'')+'" onclick="togglePair(\''+p+'\',this)"></button></div>'});document.getElementById('alertList').innerHTML=h||'<div style="font-family:var(--f2);font-size:11px;color:var(--t3);text-align:center;padding:20px">Nenhum par encontrado</div>';var _dA=document.getElementById('dAtivos');if(_dA)_dA.textContent=monitored.length;
