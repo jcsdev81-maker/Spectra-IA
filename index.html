@@ -111,6 +111,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .scan-pillar.active .scan-dot{background:var(--acc);box-shadow:0 0 8px var(--acc);animation:pulse .8s ease-in-out infinite}
 .scan-pillar.done .scan-dot{background:var(--grn)}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
 </style>
 </head>
 <body>
@@ -166,6 +167,44 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
   </div>
 </div>
 
+<!-- ══ ONBOARDING (1ª vez) ══ -->
+<div id="onboardingModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--bg2);border:1px solid var(--grn);border-radius:16px;max-width:380px;width:100%;padding:22px;max-height:90vh;overflow-y:auto">
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--grd);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:24px;font-weight:800;color:#000">S</div>
+      <div style="font-size:17px;font-weight:700;color:var(--t1);letter-spacing:1px">BEM-VINDO, OPERADOR</div>
+      <div style="font-family:var(--f2);font-size:11px;color:var(--t3);margin-top:4px">3 passos pra receber sinais automáticos</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--bg);border:1px solid var(--brd);border-radius:8px;border-left:3px solid var(--grn)">
+        <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--grd);color:#000;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">1</div>
+        <div>
+          <div style="font-family:var(--f2);font-size:12px;font-weight:600;color:var(--t1)">Escolha seus pares</div>
+          <div style="font-family:var(--f2);font-size:11px;color:var(--t2);margin-top:3px;line-height:1.5">Aba <strong style="color:var(--acc)">🔔 Alertas</strong>. Marque os pares que você quer monitorar (BTC, ETH, SOL...)</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--bg);border:1px solid var(--brd);border-radius:8px;border-left:3px solid var(--acc)">
+        <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--accd);border:1px solid var(--acc);color:var(--acc);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">2</div>
+        <div>
+          <div style="font-family:var(--f2);font-size:12px;font-weight:600;color:var(--t1)">Conecte seu Telegram</div>
+          <div style="font-family:var(--f2);font-size:11px;color:var(--t2);margin-top:3px;line-height:1.5">Aba <strong style="color:var(--acc)">⚙ Config</strong>. Abra <strong style="color:var(--t1)">@especulador_sinais_bot</strong>, envie <strong style="color:var(--t1)">/start</strong>, cole o Chat ID.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:var(--bg);border:1px solid var(--brd);border-radius:8px;border-left:3px solid var(--amb)">
+        <div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--ambd);border:1px solid var(--amb);color:var(--amb);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">3</div>
+        <div>
+          <div style="font-family:var(--f2);font-size:12px;font-weight:600;color:var(--t1)">Ative o auto-scan</div>
+          <div style="font-family:var(--f2);font-size:11px;color:var(--t2);margin-top:3px;line-height:1.5">Na aba <strong style="color:var(--acc)">🔔 Alertas</strong>, toque no botão de <strong style="color:var(--t1)">AUTO-SCAN</strong>. O SPECTRA analisa 24/7 e te avisa no Telegram quando achar oportunidade.</div>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--grnd);border:1px solid var(--grn);border-radius:8px;padding:10px;margin-top:14px;text-align:center">
+      <div style="font-family:var(--f2);font-size:10px;color:var(--grn);letter-spacing:1px">✓ Você tem <strong id="obTrialDays">3 dias</strong> de acesso grátis</div>
+    </div>
+    <button onclick="closeOnboarding()" style="width:100%;padding:13px;background:var(--grd);border:none;border-radius:10px;color:#000;font-family:var(--f1);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;margin-top:14px">ENTENDI · COMEÇAR</button>
+  </div>
+</div>
+
 <!-- SHELL -->
 <div class="shell" id="shell" style="display:none">
   <div class="topbar">
@@ -189,6 +228,34 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
           <div class="label">R:R MÉDIO</div>
           <div class="val" style="font-size:30px;color:var(--amb)" id="dRR">—</div>
           <div class="sub" id="dRRsub">dos sinais</div>
+        </div>
+      </div>
+
+      <!-- ══ MOTOR IA AO VIVO (confirma que o SPECTRA está analisando) ══ -->
+      <div class="card" style="background:linear-gradient(135deg,var(--bg2) 0%,var(--bg) 100%);border:1px solid var(--brd);border-left:3px solid var(--grn);padding:14px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div id="motorDot" style="width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 10px var(--grn);animation:pulseDot 2s infinite"></div>
+            <span style="font-family:var(--f2);font-size:11px;color:var(--t1);letter-spacing:2px;font-weight:700">SPEC MIND · ATIVO</span>
+          </div>
+          <span id="motorBadge" style="font-family:var(--f2);font-size:9px;color:var(--grn);background:var(--grnd);border:1px solid var(--grn);border-radius:10px;padding:2px 8px">24/7</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="background:var(--bg);border-radius:6px;padding:8px">
+            <div style="font-family:var(--f2);font-size:9px;color:var(--t3);letter-spacing:1px">ÚLTIMO SCAN</div>
+            <div id="motorLast" style="font-family:var(--f2);font-size:13px;font-weight:600;color:var(--t1);margin-top:2px">—</div>
+          </div>
+          <div style="background:var(--bg);border-radius:6px;padding:8px">
+            <div style="font-family:var(--f2);font-size:9px;color:var(--t3);letter-spacing:1px">PRÓXIMO SCAN</div>
+            <div id="motorNext" style="font-family:var(--f2);font-size:13px;font-weight:600;color:var(--acc);margin-top:2px">—</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--brd)">
+          <div style="font-family:var(--f2);font-size:10px;color:var(--t2)">
+            <span style="color:var(--t3)">Pares:</span> <span id="motorPairs" style="color:var(--t1);font-weight:600">—</span> ·
+            <span style="color:var(--t3)">Sinais 24h:</span> <span id="motor24h" style="color:var(--grn);font-weight:600">0</span>
+          </div>
+          <button onclick="goPage('alert',document.querySelector('.nav-item:nth-child(4)'))" style="padding:4px 10px;background:transparent;border:1px solid var(--acc);border-radius:12px;color:var(--acc);font-family:var(--f2);font-size:9px;cursor:pointer;letter-spacing:1px">CONFIGURAR</button>
         </div>
       </div>
 
@@ -514,7 +581,7 @@ async function doSignup(){
   if(r2.error){aMsg('Conta criada. Faça login.',false);swAuth('login',document.querySelector('.auth-tab'));return;}
   curUser=r2.data.user;checkAccess();
 }
-async function doLogout(){stopAutoScan();if(perfMonitorIv){clearInterval(perfMonitorIv);perfMonitorIv=null;}if(window._tickerIv){clearInterval(window._tickerIv);window._tickerIv=null;}if(window._dashIv){clearInterval(window._dashIv);window._dashIv=null;}if(window._healthIv){clearInterval(window._healthIv);window._healthIv=null;}localStorage.removeItem(uKey('autoscan'));if(sb)await sb.auth.signOut();curUser=null;curProfile=null;signals=[];monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];showAuth();}
+async function doLogout(){stopAutoScan();if(perfMonitorIv){clearInterval(perfMonitorIv);perfMonitorIv=null;}if(window._tickerIv){clearInterval(window._tickerIv);window._tickerIv=null;}if(window._dashIv){clearInterval(window._dashIv);window._dashIv=null;}if(window._healthIv){clearInterval(window._healthIv);window._healthIv=null;}if(window._profileIv){clearInterval(window._profileIv);window._profileIv=null;}localStorage.removeItem(uKey('autoscan'));if(sb)await sb.auth.signOut();curUser=null;curProfile=null;signals=[];monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];showAuth();}
 
 var _fpSent=false;
 async function forgotPass(){
@@ -551,6 +618,7 @@ function showAuth(){document.getElementById('authScr').classList.remove('off');d
 function showExpired(end){document.getElementById('authScr').classList.add('off');document.getElementById('shell').style.display='none';document.getElementById('expScr').classList.add('on');document.getElementById('expInfo').textContent='Trial encerrou em '+end.toLocaleDateString('pt-BR');}
 function showApp(){
   document.getElementById('authScr').classList.add('off');document.getElementById('expScr').classList.remove('on');document.getElementById('shell').style.display='flex';
+  resetButtonStates(); // FIX: força reset de botões que poderiam estar travados
   loadUserData();
   if(curProfile){
     var isPrem=curProfile.subscription_status==='premium';
@@ -590,19 +658,43 @@ function showApp(){
     if(tgSigBtn){if(tgSignalsOn)tgSigBtn.classList.add('on');else tgSigBtn.classList.remove('on');}
   }
   loadBinancePairs().then(function(){filterPairs();popPairSel();});
-  fetchTicker();renderSignals();updateDash();startPerfMonitor();
+  fetchTicker();renderSignals();updateDash();updateMotorStatus();startPerfMonitor();
   // Auto-refresh ticker (preços ao vivo) a cada 60s
   if(window._tickerIv)clearInterval(window._tickerIv);
   window._tickerIv=setInterval(fetchTicker,60000);
   // Auto-refresh dashboard (livePrice dos abertos) a cada 30s
   if(window._dashIv)clearInterval(window._dashIv);
-  window._dashIv=setInterval(updateDash,30000);
+  window._dashIv=setInterval(function(){updateDash();updateMotorStatus();},30000);
+  // Refetch profile a cada 2min (pega last_scan_at + sinais novos gerados pelo Worker)
+  if(window._profileIv)clearInterval(window._profileIv);
+  window._profileIv=setInterval(async function(){
+    if(!curUser||!sb)return;
+    try{
+      var r=await sb.from('profiles').select('*').eq('id',curUser.id).single();
+      if(r.data){
+        curProfile=r.data;
+        // Re-merge sinais da nuvem com os locais (dedup por ID)
+        var sbSigs=safeJSON(curProfile.signals_data,null);
+        if(Array.isArray(sbSigs)&&sbSigs.length){
+          var ids={};signals.forEach(function(s){if(s&&s.id)ids[s.id]=true;});
+          var newOnes=sbSigs.filter(function(s){return s&&s.id&&!ids[s.id];});
+          if(newOnes.length){
+            signals=newOnes.concat(signals).slice(0,100);
+            renderSignals();updateDash();
+          }
+        }
+        updateMotorStatus();
+      }
+    }catch(e){}
+  },120000);
   // Health check Worker a cada 2min
   checkEngineHealth();
   if(window._healthIv)clearInterval(window._healthIv);
   window._healthIv=setInterval(checkEngineHealth,120000);
   // Trial warning
   checkTrialWarning();
+  // Onboarding 1ª vez
+  maybeShowOnboarding();
 }
 
 // Init auth
@@ -716,6 +808,10 @@ function syncSignalsToCloud(){
 // Sync quando o app vai pro background ou fecha
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='hidden'&&_syncDirty)syncSignalsToCloud();
+  // FIX: quando a aba volta a ser visível, garante reset de botões travados
+  if(document.visibilityState==='visible'&&curProfile){
+    try{resetButtonStates();updateMotorStatus();}catch(e){}
+  }
 });
 window.addEventListener('beforeunload',function(){
   if(_syncDirty)syncSignalsToCloud();
@@ -1264,10 +1360,13 @@ async function analisarUm(){
     else if(em.indexOf('timeout')>-1||em.indexOf('abort')>-1)toast('Demorou demais — tente novamente','err');
     else if(em.indexOf('JSON')>-1){}
     else toast('Erro: '+em,'err');
+  }finally{
+    // GARANTE reset mesmo se algo falhar, dispositivo trocar, promise pendente, etc
+    st.style.display='none';
+    btn.disabled=false;btn.style.opacity='1';btn.style.pointerEvents='auto';btn.textContent='⚡ ANALISAR COM SPEC MIND';
+    isAnalyzing=false;
+    try{renderSignals();updateDash();}catch(e){}
   }
-  st.style.display='none';
-  btn.disabled=false;btn.style.opacity='1';btn.style.pointerEvents='auto';btn.textContent='⚡ ANALISAR COM SPEC MIND';
-  isAnalyzing=false;renderSignals();updateDash();
 }
 
 // ── RENDER SIGNALS ──
@@ -1939,6 +2038,45 @@ async function deleteAccount(){
   }catch(e){toast('Erro: '+e.message,'err');}
 }
 
+// ── ONBOARDING (1ª vez) ──
+function maybeShowOnboarding(){
+  if(!curProfile)return;
+  // Chave global (não per-user) pra não aparecer de novo em outros dispositivos
+  var seen=localStorage.getItem('spectra_onboard_'+curUser.id);
+  if(seen)return;
+  var m=document.getElementById('onboardingModal');
+  if(!m)return;
+  var td=document.getElementById('obTrialDays');
+  if(td){
+    var days=parseInt(curProfile.trial_days)||3;
+    td.textContent=days+(days===1?' dia':' dias');
+  }
+  m.style.display='flex';
+}
+function closeOnboarding(){
+  var m=document.getElementById('onboardingModal');
+  if(m)m.style.display='none';
+  if(curUser)try{localStorage.setItem('spectra_onboard_'+curUser.id,'1');}catch(e){}
+  // Leva o user pra aba Alertas onde ele precisa marcar os pares
+  try{goPage('alert',document.querySelector('.nav-item:nth-child(4)'));}catch(e){}
+}
+
+// ── RESET ESTADO DE BOTÕES (corrige bug de "disabled em outro dispositivo") ──
+function resetButtonStates(){
+  isAnalyzing=false;isScanning=false;
+  // Botão ANALISAR principal
+  var btnAn=document.getElementById('btnAn');
+  if(btnAn){btnAn.disabled=false;btnAn.style.opacity='1';btnAn.style.pointerEvents='auto';btnAn.textContent='⚡ ANALISAR COM SPEC MIND';}
+  // Botão TELEGRAM salvar/testar
+  var btnTgS=document.getElementById('btnTgSave');
+  if(btnTgS){btnTgS.disabled=false;btnTgS.textContent='SALVAR';}
+  var btnTgT=document.getElementById('btnTgTest');
+  if(btnTgT){btnTgT.disabled=false;btnTgT.textContent='TESTAR';}
+  // Esconde animações que poderiam estar travadas
+  var scanSt=document.getElementById('scanSt');if(scanSt)scanSt.style.display='none';
+  var scanAnim=document.getElementById('scanAnim');if(scanAnim)scanAnim.classList.remove('on');
+}
+
 // Health check Worker (SPEC MIND)
 async function checkEngineHealth(){
   var el=document.getElementById('engineStatus');if(!el)return;
@@ -1947,6 +2085,67 @@ async function checkEngineHealth(){
     if(r.ok){el.textContent='● Ativo';el.style.color='var(--grn)';}
     else{el.textContent='● Instável';el.style.color='var(--amb)';}
   }catch(e){el.textContent='● Offline';el.style.color='var(--red)';}
+}
+
+// ── MOTOR IA AO VIVO (dashboard card) ──
+function updateMotorStatus(){
+  if(!curProfile)return;
+  var dotEl=document.getElementById('motorDot');
+  var lastEl=document.getElementById('motorLast');
+  var nextEl=document.getElementById('motorNext');
+  var pairsEl=document.getElementById('motorPairs');
+  var badgeEl=document.getElementById('motorBadge');
+  var sig24El=document.getElementById('motor24h');
+  if(!lastEl)return;
+
+  var autoScanOn=curProfile.auto_scan||false;
+  var scanIntHours=parseInt(curProfile.scan_interval)||4;
+  var lastScan=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
+  var now=Date.now();
+
+  // Último scan — texto humano
+  if(lastScan>0){
+    var mins=Math.round((now-lastScan)/60000);
+    if(mins<1)lastEl.textContent='agora há pouco';
+    else if(mins<60)lastEl.textContent='há '+mins+' min';
+    else if(mins<1440)lastEl.textContent='há '+Math.floor(mins/60)+'h '+(mins%60)+'min';
+    else lastEl.textContent='há '+Math.floor(mins/1440)+' dias';
+    lastEl.style.color='var(--t1)';
+  }else{
+    lastEl.textContent='aguardando 1º scan';
+    lastEl.style.color='var(--amb)';
+  }
+
+  // Próximo scan — texto humano
+  if(autoScanOn){
+    if(lastScan>0){
+      var nextMs=lastScan+scanIntHours*3600000;
+      var diffMin=Math.round((nextMs-now)/60000);
+      if(diffMin<=0)nextEl.textContent='a qualquer momento';
+      else if(diffMin<60)nextEl.textContent='em '+diffMin+' min';
+      else nextEl.textContent='em '+Math.floor(diffMin/60)+'h '+(diffMin%60)+'min';
+      nextEl.style.color='var(--acc)';
+    }else{
+      nextEl.textContent='em breve';
+      nextEl.style.color='var(--acc)';
+    }
+    if(dotEl){dotEl.style.background='var(--grn)';dotEl.style.boxShadow='0 0 10px var(--grn)';}
+    if(badgeEl){badgeEl.textContent=scanIntHours+'h';badgeEl.style.color='var(--grn)';badgeEl.style.borderColor='var(--grn)';badgeEl.style.background='var(--grnd)';}
+  }else{
+    nextEl.textContent='desativado';
+    nextEl.style.color='var(--red)';
+    if(dotEl){dotEl.style.background='var(--red)';dotEl.style.boxShadow='0 0 10px var(--red)';}
+    if(badgeEl){badgeEl.textContent='OFF';badgeEl.style.color='var(--red)';badgeEl.style.borderColor='var(--red)';badgeEl.style.background='var(--red-dim,rgba(255,82,82,.15))';}
+  }
+
+  // Pares monitorados
+  var pairsCount=Array.isArray(monitored)?monitored.length:0;
+  if(pairsEl)pairsEl.textContent=pairsCount;
+
+  // Sinais últimas 24h
+  var cutoff=now-86400000;
+  var sig24=signals.filter(function(s){return s&&s.time&&new Date(s.time).getTime()>cutoff;}).length;
+  if(sig24El)sig24El.textContent=sig24;
 }
 
 // Trial warning banner
