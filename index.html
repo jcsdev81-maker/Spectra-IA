@@ -16,7 +16,7 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--f1)
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
 button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .shell{min-height:100vh;display:flex;flex-direction:column;padding-bottom:54px}
-.nav{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;background:var(--bg2);border-top:1px solid var(--brd);padding:6px 0 max(6px,env(safe-area-inset-bottom))}
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:9000;display:flex;background:var(--bg2);border-top:1px solid var(--brd);padding:6px 0 max(6px,env(safe-area-inset-bottom))}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border:none;background:none;color:var(--t3);font-size:10px;font-weight:500;letter-spacing:.5px;transition:.2s}
 .nav-item.on{color:var(--acc)}
 .nav-icon{font-size:20px;line-height:1}
@@ -335,19 +335,15 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
     </div>
     <!-- ALERTAS -->
     <div class="page" id="pg-alert">
-      <!-- AUTO-SCAN -->
+      <!-- AUTO-SCAN + TELEGRAM -->
       <div class="card" style="border-color:var(--acc);margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div><div style="font-family:var(--f2);font-size:11px;color:var(--acc);letter-spacing:1.5px;font-weight:600">⚡ AUTO-SCAN</div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:2px">Funciona 24/7 mesmo com app fechado</div></div>
+          <div><div style="font-family:var(--f2);font-size:11px;color:var(--acc);letter-spacing:1.5px;font-weight:600">⚡ AUTO-SCAN</div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:2px">Check a cada 5min — IA só quando detecta mudança</div></div>
           <button id="tgAutoScan" class="al-toggle" onclick="toggleAutoScan(this)"></button>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-          <span style="font-family:var(--f2);font-size:10px;color:var(--t3)">Intervalo:</span>
-          <select id="scanInterval" style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;color:var(--t1);font-family:var(--f2);font-size:11px;outline:none" onchange="updateAutoInterval()">
-            <option value="240" selected>4 horas</option>
-            <option value="480">8 horas</option>
-            <option value="720">12 horas</option>
-          </select>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <div style="font-family:var(--f2);font-size:10px;color:var(--t3)">Enviar sinais pro Telegram:</div>
+          <button id="tgSignalToggle" class="al-toggle" onclick="toggleTgSignals(this)"></button>
         </div>
         <div id="autoStatus" style="font-family:var(--f2);font-size:10px;color:var(--t3);padding:6px;background:var(--bg);border-radius:6px;text-align:center">Desativado</div>
         <div id="autoLog" style="max-height:100px;overflow-y:auto;margin-top:8px;font-family:var(--f2);font-size:10px;color:var(--t3);line-height:1.8"></div>
@@ -555,13 +551,18 @@ function showApp(){
     // Auto-scan restore
     var wasAutoOn=curProfile.auto_scan||localStorage.getItem(uKey('autoscan'))==='1';
     // Intervalo vem primeiro do Supabase (mais confiável), depois localStorage
-    if(curProfile.scan_interval){autoIntervalMin=curProfile.scan_interval*60;}
-    else{var savedInterval=localStorage.getItem(uKey('interval'));if(savedInterval)autoIntervalMin=parseInt(savedInterval);}
-    var sel=document.getElementById('scanInterval');if(sel)sel.value=autoIntervalMin;
+    
+    
+    
     if(wasAutoOn){
       var tgBtn=document.getElementById('tgAutoScan');
       if(tgBtn&&!tgBtn.classList.contains('on')){tgBtn.classList.add('on');autoScanOn=true;startAutoScan();}
     }
+    // Restore Telegram toggle state
+    var savedTgSig=localStorage.getItem(uKey('tg_signals'));
+    tgSignalsOn=savedTgSig!=='0'; // default ON
+    var tgSigBtn=document.getElementById('tgSignalToggle');
+    if(tgSigBtn){if(tgSignalsOn)tgSigBtn.classList.add('on');else tgSigBtn.classList.remove('on');}
   }
   fetchTicker();filterPairs();popPairSel();renderSignals();updateDash();startPerfMonitor();
   // Auto-refresh ticker (preços ao vivo) a cada 60s
@@ -797,7 +798,7 @@ function detectMACDFailure(macdLine,signal,lookback){
 // ── FETCH MARKET DATA (700 candles Binance) ──
 async function fetchMarketData(symbol,interval){
   var clean=symbol.replace(/^[A-Z]+:/,'');
-  var biMap={'5':'5m','15':'15m','30':'30m','60':'1h','240':'4h','D':'1d','W':'1w','M':'1M'};
+  var biMap={'5':'5m','15':'15m','30':'30m','60':'1h','240':'4h','480':'8h','D':'1d','W':'1w','M':'1M'};
   var kl=await(await fetch('https://api.binance.com/api/v3/klines?symbol='+clean+'&interval='+(biMap[interval]||'4h')+'&limit=700')).json();
   var kd=await(await fetch('https://api.binance.com/api/v3/klines?symbol='+clean+'&interval=1d&limit=700')).json();
   var c=kl.map(function(k){return+k[4]}),h=kl.map(function(k){return+k[2]}),l=kl.map(function(k){return+k[3]}),o=kl.map(function(k){return+k[1]}),v=kl.map(function(k){return+k[5]});
@@ -949,7 +950,7 @@ FASE 4 — EXECUÇÃO: Entrada onde Golden Zone+POC+DEMA72 confluem. Stop estrut
 REGRAS DA FALHA: Falha=REJEIÇÃO na retração (não cruzamento). Sem retração=sem setup. Preço deve estar na zona de valor. Histograma confirma. Fibo em LOG.
 
 ABSORÇÃO: Spring=não renova mínima+acima DEMA72+histograma positivo (LONG). UTAD=espelho (SHORT). Prelúdio da falha.
-TIMEFRAMES: 4H=GATILHO (★★★+R:R≥3:1 pode antecipar). DIÁRIO=CONFIRMAÇÃO (amplia alvos 227.2%+).
+TIMEFRAMES: 8H=GATILHO (★★★+R:R≥3:1 pode antecipar). DIÁRIO=CONFIRMAÇÃO (amplia alvos 227.2%+).
 TIMING OBRIGATÓRIO: Se preço fora da Golden Zone: "Operador, timing ideal era [preço]. Aguardar pullback."
 
 ★ REGRA GZ OBRIGATÓRIA:
@@ -1102,7 +1103,7 @@ var lastGoldenZone=null;
 var lastGZstatus='NÃO';
 async function buildMktStr(sym){
   try{
-    var d=await fetchMarketData(sym,'240');
+    var d=await fetchMarketData(sym,'480');
     lastExtLevels={e100:parseFloat(d.e100),e1272:parseFloat(d.e1272),e1414:parseFloat(d.e1414),e1618:parseFloat(d.e1618),e2270:parseFloat(d.e2270),e2414:parseFloat(d.e2414)};
     // Golden Zone = 0.618-0.786 (região de valor pra entrada)
     lastGoldenZone={low:parseFloat(d.f786),high:parseFloat(d.f618)};
@@ -1690,97 +1691,88 @@ function alertBeep(sig){if(navigator.vibrate){if((sig.forca||0)>=70)navigator.vi
 function beep(f,d){var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=f;g.gain.value=.3;g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+d);o.start();o.stop(audioCtx.currentTime+d);}
 
 // ── AUTO-SCAN ──
-var autoScanOn=false,autoScanTimer=null,autoCountdown=null;
-var autoIntervalMin=240;
+var autoScanOn=false,autoScanTimer=null;
+var tgSignalsOn=true; // Master toggle for Telegram signals
+var lastMarketState={}; // Cache for quick check comparison
 
 function toggleAutoScan(btn){
   autoScanOn=!autoScanOn;
   btn.classList.toggle('on');
   if(autoScanOn){startAutoScan()}else{stopAutoScan()}
   if(curProfile)curProfile.auto_scan=autoScanOn;
-  var hours=Math.round(autoIntervalMin/60);
-  if(sb&&curUser)sb.from('profiles').update({auto_scan:autoScanOn,scan_interval:hours}).eq('id',curUser.id);
+  if(sb&&curUser)sb.from('profiles').update({auto_scan:autoScanOn}).eq('id',curUser.id);
   localStorage.setItem(uKey('autoscan'),autoScanOn?'1':'0');
-  localStorage.setItem(uKey('interval'),autoIntervalMin);
 }
 
-function updateAutoInterval(){
-  autoIntervalMin=parseInt(document.getElementById('scanInterval').value)||240;
-  localStorage.setItem(uKey('interval'),autoIntervalMin);
-  if(sb&&curUser){
-    var hours=Math.round(autoIntervalMin/60);
-    sb.from('profiles').update({scan_interval:hours}).eq('id',curUser.id);
-    if(curProfile)curProfile.scan_interval=hours;
-  }
-  if(autoScanOn){stopAutoScan();startAutoScan();}
+function toggleTgSignals(btn){
+  tgSignalsOn=!tgSignalsOn;
+  btn.classList.toggle('on');
+  localStorage.setItem(uKey('tg_signals'),tgSignalsOn?'1':'0');
+  toast(tgSignalsOn?'Telegram ativado':'Telegram desativado',tgSignalsOn?'ok':'inf');
 }
 
 function startAutoScan(){
   autoScanOn=true;
   var st=document.getElementById('autoStatus');
-  if(st)st.style.color='var(--grn)';
-
-  // Último scan: usa o MAIS RECENTE entre Supabase (nuvem) e localStorage (local)
-  var lsLast=parseInt(localStorage.getItem(uKey('last_scan'))||'0');
-  var sbLast=curProfile&&curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
-  var lastScan=Math.max(lsLast,sbLast);
-  var elapsed=Date.now()-lastScan;
-  var intervalMs=autoIntervalMin*60*1000;
-  var remaining=Math.max(0,intervalMs-elapsed);
-
-  if(remaining<=0){
-    autoLog('Scan necessário (último há '+Math.round(elapsed/60000)+' min)');
-    runAutoScan();
-    autoScanTimer=setInterval(runAutoScan,intervalMs);
-    startCountdown(intervalMs);
-  }else{
-    autoLog('Próximo scan em '+Math.round(remaining/60000)+' min');
-    autoScanTimer=setTimeout(function(){
-      runAutoScan();
-      autoScanTimer=setInterval(runAutoScan,intervalMs);
-      startCountdown(intervalMs);
-    },remaining);
-    startCountdown(remaining);
-  }
+  if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — check a cada 5min';
+  autoLog('Auto-scan ativado — check rápido a cada 5min');
+  // Run quick check immediately, then every 5 min
+  quickCheck();
+  autoScanTimer=setInterval(quickCheck,5*60*1000);
 }
 
 function stopAutoScan(){
   autoScanOn=false;
-  if(autoScanTimer){clearInterval(autoScanTimer);clearTimeout(autoScanTimer);autoScanTimer=null;}
-  if(autoCountdown){clearInterval(autoCountdown);autoCountdown=null;}
+  if(autoScanTimer){clearInterval(autoScanTimer);autoScanTimer=null;}
   var st=document.getElementById('autoStatus');
   if(st){st.textContent='Desativado';st.style.color='var(--t3)';}
+  autoLog('Auto-scan desativado');
 }
 
-function startCountdown(ms){
-  if(autoCountdown)clearInterval(autoCountdown);
-  var next=Date.now()+ms;
-  autoCountdown=setInterval(function(){
-    var left=Math.max(0,next-Date.now());
-    if(left<=0){next=Date.now()+autoIntervalMin*60*1000;} // reseta ao completar
-    var h=Math.floor(left/3600000),m=Math.floor((left%3600000)/60000),s=Math.floor((left%60000)/1000);
+// ═══ STAGE 1: QUICK CHECK (só Binance, sem IA) ═══
+async function quickCheck(){
+  if(isAnalyzing)return;
+  var changed=[];
+  try{
+    var symbols=monitored.map(function(p){return'"'+p+'"'}).join(',');
+    var r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=['+symbols+']');
+    var prices=await r.json();
+    prices.forEach(function(t){
+      var sym=t.symbol,price=parseFloat(t.price);
+      var prev=lastMarketState[sym];
+      if(!prev){lastMarketState[sym]={price:price,time:Date.now()};return;}
+      // Detect significant change: >1.5% move since last check
+      var pctChange=Math.abs((price-prev.price)/prev.price*100);
+      if(pctChange>=1.5){
+        changed.push(sym);
+        lastMarketState[sym]={price:price,time:Date.now()};
+      }
+    });
+  }catch(e){autoLog('Check falhou: '+e.message);return;}
+
+  if(changed.length>0){
+    autoLog('Mudança detectada: '+changed.map(function(s){return s.replace('USDT','')}).join(', '));
+    await runFullScan(changed);
+  }else{
     var st=document.getElementById('autoStatus');
-    if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — próximo scan: '+h+'h'+String(m).padStart(2,'0')+'m'+String(s).padStart(2,'0')+'s';
-  },1000);
+    if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — último check: '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  }
 }
 
-async function runAutoScan(){
-  if(isAnalyzing){autoLog('Análise em andamento — scan adiado');return;}
-  // Salva timestamp em AMBOS (localStorage + Supabase)
-  var nowISO=new Date().toISOString();
-  localStorage.setItem(uKey('last_scan'),Date.now().toString());
-  if(sb&&curUser){sb.from('profiles').update({last_scan_at:nowISO}).eq('id',curUser.id);if(curProfile)curProfile.last_scan_at=nowISO;}
-  autoLog('Scan: '+monitored.length+' pares');
+// ═══ STAGE 2: FULL SCAN (Gemini IA, só pares com mudança) ═══
+async function runFullScan(pairsToScan){
+  if(isAnalyzing)return;
+  var pairs=pairsToScan||monitored;
+  autoLog('Análise IA: '+pairs.length+' par(es)');
   var found=0;
-  for(var i=0;i<monitored.length;i++){
-    var pair=monitored[i];
-    // Dedup: pula se já tem sinal aberto pra esse par
+  for(var i=0;i<pairs.length;i++){
+    var pair=pairs[i];
     var existing=signals.find(function(s){return(s.par===pair||s.par===pair.replace('USDT','/USDT'))&&(!s.status||s.status==='open')});
-    if(existing){autoLog('⏭ '+pair.replace('USDT','')+' — sinal aberto existe');continue;}
-    autoLog((i+1)+'/'+monitored.length+' '+pair.replace('USDT','')+'...');
+    if(existing){autoLog('⏭ '+pair.replace('USDT','')+' — sinal aberto');continue;}
+    autoLog((i+1)+'/'+pairs.length+' '+pair.replace('USDT','')+'...');
     try{
       var mkt=await buildMktStr(pair);
-      var text=await callGemini(SYSTEM_PROMPT,mkt,true);
+      var text=await callGemini(SYSTEM_PROMPT,mkt,!tgSignalsOn);
       var raw=exJSON(text);
       var sig=mapSignal(raw,pair);
       if(sig){
@@ -1794,25 +1786,22 @@ async function runAutoScan(){
           alertBeep(sig);
           autoLog('✅ '+pair.replace('USDT','')+' → '+dir+' R:R '+(sig.rr||'—'));
         }else{
-          // AGUARDAR — salva mas não conta como operável
           signals.unshift(sig);signals=signals.slice(0,100);saveSigsNow();
           autoLog('◆ '+pair.replace('USDT','')+' → AGUARDAR');
         }
       }
     }catch(e){autoLog('❌ '+pair.replace('USDT','')+': '+e.message);}
-    if(i<monitored.length-1)await new Promise(function(ok){setTimeout(ok,4000)});
+    if(i<pairs.length-1)await new Promise(function(ok){setTimeout(ok,4000)});
   }
   renderSignals();updateDash();
+  if(found>0)toast(found+' sinais encontrados','ok');
   autoLog('Completo — '+found+' operáveis');
-  if(found>0){toast(found+' sinais encontrados','ok');}
-  startCountdown(autoIntervalMin*60*1000);
 }
 
 function autoLog(msg){
   var el=document.getElementById('autoLog');if(!el)return;
   var now=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   el.innerHTML+='<div>['+now+'] '+msg+'</div>';
-  // Limit to last 20 entries
   var divs=el.querySelectorAll('div');
   if(divs.length>20){for(var i=0;i<divs.length-20;i++)divs[i].remove();}
   el.scrollTop=el.scrollHeight;
