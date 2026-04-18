@@ -568,7 +568,8 @@ function showApp(){
     var tgSigBtn=document.getElementById('tgSignalToggle');
     if(tgSigBtn){if(tgSignalsOn)tgSigBtn.classList.add('on');else tgSigBtn.classList.remove('on');}
   }
-  fetchTicker();filterPairs();popPairSel();renderSignals();updateDash();startPerfMonitor();
+  loadBinancePairs().then(function(){filterPairs();popPairSel();});
+  fetchTicker();renderSignals();updateDash();startPerfMonitor();
   // Auto-refresh ticker (preços ao vivo) a cada 60s
   if(window._tickerIv)clearInterval(window._tickerIv);
   window._tickerIv=setInterval(fetchTicker,60000);
@@ -978,24 +979,10 @@ Modelo: {"ativo":"PAR","direcao_dominante":"COMPRADOR|VENDEDOR|LATERAL","probabi
 
 
 // ── PARES ──
-var ALL_PAIRS=[
-// L1
-'BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','ADAUSDT','AVAXUSDT','SUIUSDT','DOTUSDT','NEARUSDT','APTUSDT','ATOMUSDT','ICPUSDT','SEIUSDT','HBARUSDT','TRXUSDT','LTCUSDT','TONUSDT','ALGOUSDT','EOSUSDT','EGLDUSDT','KAVAUSDT','MINAUSDT','CELUSDT','KASUSDT','FLOWUSDT','ROSEUSDT','ZILUSDT',
-// L2
-'ARBUSDT','OPUSDT','POLUSDT','IMXUSDT','MANTAUSDT','STRKUSDT','ZKUSDT','METISUSDT',
-// MEME
-'DOGEUSDT','PEPEUSDT','SHIBUSDT','WIFUSDT','FLOKIUSDT','BONKUSDT','NEIROUSDT','TURBOUSDT','PEOPLEUSDT','BOMEUSDT','ACTUSDT','MEMEUSDT',
-// DEFI
-'LINKUSDT','UNIUSDT','AAVEUSDT','MKRUSDT','INJUSDT','JUPUSDT','PENDLEUSDT','GMXUSDT','DYDXUSDT','LDOUSDT','RUNEUSDT','ONDOUSDT','ENAUSDT','STXUSDT','CRVUSDT','COMPUSDT','SNXUSDT','SUSHIUSDT','1INCHUSDT','CAKEUSDT','RAYUSDT','JTOUSDT','PYTHUSDT',
-// AI
-'FETUSDT','RENDERUSDT','TAOUSDT','WLDUSDT','ARKMUSDT',
-// INFRA
-'FILUSDT','TIAUSDT','ARUSDT','GRTUSDT','THETAUSDT','ENSUSDT','SSVUSDT','ETHFIUSDT','ALTUSDT',
-// GAMING
-'AXSUSDT','GALAUSDT','YGGUSDT','PIXELUSDT','PORTALUSDT','RONINUSDT',
-// RWA
-'CHZUSDT','RLCUSDT','CFXUSDT','IOTAUSDT','VETUSDT','QNTUSDT','KSMUSDT','ZECUSDT','XMRUSDT','DASHUSDT','ETCUSDT','BCHUSDT','XLMUSDT','XTZUSDT'
-];
+// ── PARES DINÂMICOS (Binance API) ──
+var ALL_PAIRS=[];
+var PAIR_VOLUMES={};
+var FUTURES_SET=new Set();
 var CATS={
 'BTCUSDT':'L1','ETHUSDT':'L1','SOLUSDT':'L1','BNBUSDT':'L1','XRPUSDT':'L1','ADAUSDT':'L1','AVAXUSDT':'L1','SUIUSDT':'L1','DOTUSDT':'L1','NEARUSDT':'L1','APTUSDT':'L1','ATOMUSDT':'L1','ICPUSDT':'L1','SEIUSDT':'L1','HBARUSDT':'L1','TRXUSDT':'L1','LTCUSDT':'L1','TONUSDT':'L1','ALGOUSDT':'L1','EOSUSDT':'L1','EGLDUSDT':'L1','KAVAUSDT':'L1','MINAUSDT':'L1','CELUSDT':'L1','KASUSDT':'L1','FLOWUSDT':'L1','ROSEUSDT':'L1','ZILUSDT':'L1','ETCUSDT':'L1','BCHUSDT':'L1','XLMUSDT':'L1','XTZUSDT':'L1',
 'ARBUSDT':'L2','OPUSDT':'L2','POLUSDT':'L2','IMXUSDT':'L2','MANTAUSDT':'L2','STRKUSDT':'L2','ZKUSDT':'L2','METISUSDT':'L2',
@@ -1006,6 +993,21 @@ var CATS={
 'AXSUSDT':'GAME','GALAUSDT':'GAME','YGGUSDT':'GAME','PIXELUSDT':'GAME','PORTALUSDT':'GAME','RONINUSDT':'GAME',
 'CHZUSDT':'RWA','RLCUSDT':'RWA','CFXUSDT':'RWA','IOTAUSDT':'RWA','VETUSDT':'RWA','QNTUSDT':'RWA','KSMUSDT':'RWA','ZECUSDT':'RWA','XMRUSDT':'RWA','DASHUSDT':'RWA'
 };
+async function loadBinancePairs(){
+  try{
+    var r=await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    var tickers=await r.json();
+    var usdtPairs=tickers.filter(function(t){return t.symbol.endsWith('USDT')&&!t.symbol.endsWith('DOWNUSDT')&&!t.symbol.endsWith('UPUSDT')&&!t.symbol.includes('BULL')&&!t.symbol.includes('BEAR')&&parseFloat(t.quoteVolume)>50000;});
+    usdtPairs.forEach(function(t){PAIR_VOLUMES[t.symbol]=parseFloat(t.quoteVolume)||0;});
+    usdtPairs.sort(function(a,b){return(parseFloat(b.quoteVolume)||0)-(parseFloat(a.quoteVolume)||0)});
+    ALL_PAIRS=usdtPairs.map(function(t){return t.symbol});
+    try{var rf=await fetch('https://fapi.binance.com/fapi/v1/ticker/24hr');var ft=await rf.json();ft.forEach(function(t){if(t.symbol.endsWith('USDT'))FUTURES_SET.add(t.symbol)});}catch(e){}
+    console.log('[SPECTRA] '+ALL_PAIRS.length+' pares ('+FUTURES_SET.size+' futures)');
+  }catch(e){
+    console.error('[SPECTRA] loadBinancePairs:',e.message);
+    ALL_PAIRS=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT','ADAUSDT','DOGEUSDT','AVAXUSDT','DOTUSDT','LINKUSDT','SUIUSDT','NEARUSDT','PEPEUSDT','SHIBUSDT','ARBUSDT','OPUSDT','INJUSDT','FETUSDT','RENDERUSDT'];
+  }
+}
 
 // ── NAVIGATION ──
 function goPage(id,btn){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on')});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('pg-'+id).classList.add('on');btn.classList.add('on');if(id==='sig')popPairSel();if(id==='res')renderPerf();if(id==='alert')filterPairs();}
@@ -1015,15 +1017,24 @@ function filterSigPairs(){
   var q=(document.getElementById('sigSearch').value||'').toUpperCase().trim();
   var dd=document.getElementById('sigDropdown');if(!dd)return;
   var list=ALL_PAIRS.filter(function(p){return!q||p.indexOf(q)>-1});
-  if(!q&&list.length>20)list=list.slice(0,30); // show first 30 when empty
-  var h='';list.forEach(function(p){
+  if(!q)list=list.slice(0,40); // top 40 by volume when no search
+  var h='';list.forEach(function(p,idx){
     var n=p.replace('USDT',''),cat=CATS[p]||'';
-    var cc=cat==='L1'?'var(--acc)':cat==='MEME'?'var(--amb)':cat==='DEFI'?'var(--grn)':cat==='AI'?'#B388FF':cat==='GAME'?'#FFD740':'var(--t3)';
-    h+='<div onclick="selectSigPair(\''+p+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--brd)" ontouchstart="this.style.background=\'var(--bg)\'" ontouchend="this.style.background=\'none\'" onmouseenter="this.style.background=\'var(--bg)\'" onmouseleave="this.style.background=\'none\'"><span style="font-family:var(--f2);font-size:13px;color:var(--t1)">'+n+' / USDT</span><span style="font-family:var(--f2);font-size:10px;color:'+cc+';padding:1px 5px;background:'+cc+'22;border-radius:3px">'+cat+'</span></div>';
+    var cc=cat==='L1'?'var(--acc)':cat==='L2'?'#64FFDA':cat==='MEME'?'var(--amb)':cat==='DEFI'?'var(--grn)':cat==='AI'?'#B388FF':cat==='INFRA'?'#FF8A65':cat==='GAME'?'#FFD740':cat==='RWA'?'#80DEEA':'var(--t3)';
+    var vol=PAIR_VOLUMES[p]||0;
+    var volStr=vol>=1e9?(vol/1e9).toFixed(1)+'B':vol>=1e6?(vol/1e6).toFixed(0)+'M':vol>=1e3?(vol/1e3).toFixed(0)+'K':'—';
+    var isFut=FUTURES_SET.has(p);
+    var topBadge=(!q&&idx<10)?'<span style="font-size:9px;color:var(--amb);margin-right:4px">🔥</span>':'';
+    h+='<div onclick="selectSigPair(\''+p+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--brd)" ontouchstart="this.style.background=\'var(--bg)\'" ontouchend="this.style.background=\'none\'">'+
+      '<div style="display:flex;align-items:center;gap:6px">'+topBadge+'<span style="font-family:var(--f2);font-size:13px;color:var(--t1);font-weight:600">'+n+'</span>'+
+      (cat?'<span style="font-family:var(--f2);font-size:9px;color:'+cc+';padding:1px 4px;background:'+cc+'22;border-radius:3px">'+cat+'</span>':'')+
+      (isFut?'<span style="font-family:var(--f2);font-size:8px;color:var(--amb);padding:1px 3px;border:1px solid var(--amb);border-radius:2px">F</span>':'')+
+      '</div>'+
+      '<span style="font-family:var(--f2);font-size:10px;color:var(--t3)">$'+volStr+'</span></div>';
   });
   if(!h)h='<div style="padding:14px;text-align:center;font-family:var(--f2);font-size:11px;color:var(--t3)">Nenhum par encontrado</div>';
   dd.innerHTML=h;
-  if(q)dd.style.display='block';
+  if(q||document.activeElement===document.getElementById('sigSearch'))dd.style.display='block';
 }
 function selectSigPair(pair){
   document.getElementById('sigPair').value=pair;
