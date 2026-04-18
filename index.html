@@ -1895,19 +1895,24 @@ var lastMarketState={}; // Cache for quick check comparison
 // Retorna intervalo mínimo (em horas) que o user pode escolher com o plano atual
 function getMinIntervalForUser(){
   if(!curProfile)return 1;
-  if(curProfile.subscription_status==='premium'){
-    var plan=curProfile.plan_type;
-    if(plan==='anual'||plan==='trimestral')return 0.25; // 15 min
-    return 0.5; // mensal = 30 min
+  var status=(curProfile.subscription_status||'').toString().trim().toLowerCase();
+  var plan=(curProfile.plan_type||'').toString().trim().toLowerCase();
+  if(status==='premium'){
+    if(plan.indexOf('anual')>-1||plan.indexOf('trimestr')>-1)return 0.25; // 15 min
+    return 0.5; // mensal (ou sem plan_type definido) = 30 min
   }
-  return 1; // trial = 1h mínimo
+  return 1; // trial / expired / qualquer outro = 1h mínimo
 }
 
 function getPlanLabel(){
   if(!curProfile)return 'TRIAL';
-  if(curProfile.subscription_status==='premium'){
-    var plan=(curProfile.plan_type||'mensal').toUpperCase();
-    return plan;
+  var status=(curProfile.subscription_status||'').toString().trim().toLowerCase();
+  var plan=(curProfile.plan_type||'').toString().trim().toLowerCase();
+  if(status==='premium'){
+    if(plan.indexOf('anual')>-1)return 'ANUAL';
+    if(plan.indexOf('trimestr')>-1)return 'TRIMESTRAL';
+    if(plan.indexOf('mensal')>-1)return 'MENSAL';
+    return 'PREMIUM'; // premium sem plan_type preenchido
   }
   return 'TRIAL';
 }
@@ -1935,9 +1940,11 @@ function renderScanIntervalUI(){
     if(Math.abs(bInt-curH)<0.01){b.classList.add('active');}
   });
   if(hintEl){
-    if(minH<=0.25)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: intervalos mínimos de 15 min disponíveis.';
-    else if(minH<=0.5)hintEl.innerHTML='Plano <strong style="color:var(--grn)">MENSAL</strong>: intervalo mínimo 30 min. <span style="color:var(--acc);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Upgrade pra Anual</span> libera 15 min.';
-    else hintEl.innerHTML='Plano <strong style="color:var(--amb)">TRIAL</strong>: intervalo mínimo 1h. <span style="color:var(--grn);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Assine</span> pra liberar 30 min ou 15 min.';
+    // Debug inline: mostra exatamente o que o app está lendo do Supabase
+    var debugInfo=' <span style="opacity:.5;font-size:8px">[status='+(curProfile.subscription_status||'null')+' plan='+(curProfile.plan_type||'null')+']</span>';
+    if(minH<=0.25)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: intervalos mínimos de 15 min disponíveis.'+debugInfo;
+    else if(minH<=0.5)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: intervalo mínimo 30 min. <span style="color:var(--acc);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Upgrade pra Anual</span> libera 15 min.'+debugInfo;
+    else hintEl.innerHTML='Plano <strong style="color:var(--amb)">TRIAL</strong>: intervalo mínimo 1h. <span style="color:var(--grn);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Assine</span> pra liberar 30 min ou 15 min.'+debugInfo;
   }
 }
 
