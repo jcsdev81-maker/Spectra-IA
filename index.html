@@ -119,6 +119,11 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .pair-chip.scanned{background:var(--grnd);border-color:var(--grn);color:var(--grn);font-weight:600}
 .pair-chip.signal{background:var(--grnd);border-color:var(--grn);color:var(--grn);font-weight:700;box-shadow:0 0 8px var(--grn)}
 .pair-chip.waiting{opacity:.5}
+.int-btn{padding:8px 4px;border:1px solid var(--brd);border-radius:6px;background:var(--bg2);color:var(--t2);font-family:var(--f2);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.3px}
+.int-btn:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+.int-btn.active{background:var(--accd);border-color:var(--acc);color:var(--acc)}
+.int-btn:disabled{opacity:.4;cursor:not-allowed;background:var(--bg);color:var(--t3);position:relative}
+.int-btn:disabled::after{content:'🔒';position:absolute;top:2px;right:3px;font-size:8px}
 </style>
 </head>
 <body>
@@ -430,9 +435,26 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
       <!-- AUTO-SCAN + TELEGRAM -->
       <div class="card" style="border-color:var(--acc);margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div><div style="font-family:var(--f2);font-size:11px;color:var(--acc);letter-spacing:1.5px;font-weight:600">⚡ AUTO-SCAN</div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:2px">Check a cada 5min — IA só quando detecta mudança</div></div>
+          <div><div style="font-family:var(--f2);font-size:11px;color:var(--acc);letter-spacing:1.5px;font-weight:600">⚡ AUTO-SCAN</div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:2px">IA analisa seus pares em ciclos</div></div>
           <button id="tgAutoScan" class="al-toggle" onclick="toggleAutoScan(this)"></button>
         </div>
+
+        <!-- ── INTERVALO DE SCAN ── -->
+        <div style="background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:10px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-family:var(--f2);font-size:11px;color:var(--t2);letter-spacing:1px;font-weight:600">⏱ INTERVALO DE SCAN</div>
+            <div id="scanIntPlan" style="font-family:var(--f2);font-size:9px;padding:2px 8px;border-radius:10px;background:var(--accd);color:var(--acc);border:1px solid var(--acc)">—</div>
+          </div>
+          <div id="scanIntOptions" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+            <button data-int="0.25" onclick="setScanInterval(0.25,this)" class="int-btn">15 min</button>
+            <button data-int="0.5" onclick="setScanInterval(0.5,this)" class="int-btn">30 min</button>
+            <button data-int="1" onclick="setScanInterval(1,this)" class="int-btn">1 h</button>
+            <button data-int="2" onclick="setScanInterval(2,this)" class="int-btn">2 h</button>
+            <button data-int="4" onclick="setScanInterval(4,this)" class="int-btn">4 h</button>
+          </div>
+          <div id="scanIntHint" style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:6px;line-height:1.4">—</div>
+        </div>
+
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
           <div style="font-family:var(--f2);font-size:10px;color:var(--t3)">Enviar sinais pro Telegram:</div>
           <button id="tgSignalToggle" class="al-toggle" onclick="toggleTgSignals(this)"></button>
@@ -701,6 +723,8 @@ function showApp(){
   window._healthIv=setInterval(checkEngineHealth,120000);
   // Trial warning
   checkTrialWarning();
+  // Interval UI (aba Alertas)
+  try{renderScanIntervalUI();}catch(e){}
   // Onboarding 1ª vez
   maybeShowOnboarding();
 }
@@ -1867,6 +1891,75 @@ var autoScanOn=false,autoScanTimer=null;
 var tgSignalsOn=true; // Master toggle for Telegram signals
 var lastMarketState={}; // Cache for quick check comparison
 
+// ── INTERVALO DE SCAN (por plano) ──
+// Retorna intervalo mínimo (em horas) que o user pode escolher com o plano atual
+function getMinIntervalForUser(){
+  if(!curProfile)return 1;
+  if(curProfile.subscription_status==='premium'){
+    var plan=curProfile.plan_type;
+    if(plan==='anual'||plan==='trimestral')return 0.25; // 15 min
+    return 0.5; // mensal = 30 min
+  }
+  return 1; // trial = 1h mínimo
+}
+
+function getPlanLabel(){
+  if(!curProfile)return 'TRIAL';
+  if(curProfile.subscription_status==='premium'){
+    var plan=(curProfile.plan_type||'mensal').toUpperCase();
+    return plan;
+  }
+  return 'TRIAL';
+}
+
+// Atualiza UI do seletor de intervalo: marca o ativo, desabilita os menores que o mínimo do plano
+function renderScanIntervalUI(){
+  if(!curProfile)return;
+  var minH=getMinIntervalForUser();
+  var curH=parseFloat(curProfile.scan_interval)||4;
+  // Se o valor salvo é menor que o mínimo do plano, força pra o mínimo
+  if(curH<minH){curH=minH;curProfile.scan_interval=minH;}
+  var planEl=document.getElementById('scanIntPlan');
+  if(planEl)planEl.textContent=getPlanLabel();
+  var hintEl=document.getElementById('scanIntHint');
+  var btns=document.querySelectorAll('.int-btn');
+  btns.forEach(function(b){
+    var bInt=parseFloat(b.getAttribute('data-int'));
+    b.classList.remove('active');
+    if(bInt<minH){
+      b.disabled=true;
+    }else{
+      b.disabled=false;
+    }
+    // Marca ativo considerando tolerância
+    if(Math.abs(bInt-curH)<0.01){b.classList.add('active');}
+  });
+  if(hintEl){
+    if(minH<=0.25)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: intervalos mínimos de 15 min disponíveis.';
+    else if(minH<=0.5)hintEl.innerHTML='Plano <strong style="color:var(--grn)">MENSAL</strong>: intervalo mínimo 30 min. <span style="color:var(--acc);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Upgrade pra Anual</span> libera 15 min.';
+    else hintEl.innerHTML='Plano <strong style="color:var(--amb)">TRIAL</strong>: intervalo mínimo 1h. <span style="color:var(--grn);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Assine</span> pra liberar 30 min ou 15 min.';
+  }
+}
+
+function setScanInterval(hours,btn){
+  if(!curProfile||!sb||!curUser)return;
+  var minH=getMinIntervalForUser();
+  if(hours<minH){
+    toast('Intervalo bloqueado pelo seu plano — faça upgrade','inf');
+    return;
+  }
+  curProfile.scan_interval=hours;
+  // Salva no Supabase
+  sb.from('profiles').update({scan_interval:hours}).eq('id',curUser.id).then(function(r){
+    if(r&&r.error){toast('Erro ao salvar: '+r.error.message,'err');return;}
+    var label=hours<1?Math.round(hours*60)+' min':hours+'h';
+    toast('Intervalo: '+label,'ok');
+  });
+  renderScanIntervalUI();
+  // Atualiza o card do motor imediatamente pra refletir novo intervalo
+  try{updateMotorStatus();}catch(e){}
+}
+
 function toggleAutoScan(btn){
   autoScanOn=!autoScanOn;
   btn.classList.toggle('on');
@@ -2341,6 +2434,7 @@ async function _refetchProfile(){
         }
       }
       updateMotorStatus();
+      try{renderScanIntervalUI();}catch(e){}
       var scanning=curProfile.scan_status==='scanning'||curProfile.scan_status==='done';
       if(scanning&&!_profileFastMode){
         _profileFastMode=true;
