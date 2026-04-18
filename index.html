@@ -112,6 +112,13 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .scan-pillar.done .scan-dot{background:var(--grn)}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
 @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
+@keyframes scanPulse{0%,100%{background:var(--bg);border-color:var(--brd)}50%{background:var(--accd);border-color:var(--acc)}}
+@keyframes scanSweep{0%{box-shadow:0 0 0 0 rgba(0,230,118,.6)}100%{box-shadow:0 0 0 8px rgba(0,230,118,0)}}
+.pair-chip{font-family:var(--f2);font-size:10px;padding:4px 9px;border-radius:12px;background:var(--bg);border:1px solid var(--brd);color:var(--t2);letter-spacing:.3px;transition:all .3s}
+.pair-chip.scanning{animation:scanPulse 1.5s ease-in-out infinite,scanSweep 1.5s ease-out infinite;color:var(--acc);font-weight:600}
+.pair-chip.scanned{background:var(--grnd);border-color:var(--grn);color:var(--grn);font-weight:600}
+.pair-chip.signal{background:var(--grnd);border-color:var(--grn);color:var(--grn);font-weight:700;box-shadow:0 0 8px var(--grn)}
+.pair-chip.waiting{opacity:.5}
 </style>
 </head>
 <body>
@@ -236,7 +243,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px">
             <div id="motorDot" style="width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 10px var(--grn);animation:pulseDot 2s infinite"></div>
-            <span style="font-family:var(--f2);font-size:11px;color:var(--t1);letter-spacing:2px;font-weight:700">SPEC MIND · ATIVO</span>
+            <span id="motorTitle" style="font-family:var(--f2);font-size:11px;color:var(--t1);letter-spacing:2px;font-weight:700">SPEC MIND · ATIVO</span>
           </div>
           <span id="motorBadge" style="font-family:var(--f2);font-size:9px;color:var(--grn);background:var(--grnd);border:1px solid var(--grn);border-radius:10px;padding:2px 8px">24/7</span>
         </div>
@@ -247,12 +254,26 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
           </div>
           <div style="background:var(--bg);border-radius:6px;padding:8px">
             <div style="font-family:var(--f2);font-size:9px;color:var(--t3);letter-spacing:1px">PRÓXIMO SCAN</div>
-            <div id="motorNext" style="font-family:var(--f2);font-size:13px;font-weight:600;color:var(--acc);margin-top:2px">—</div>
+            <div id="motorNext" style="font-family:var(--f2);font-size:16px;font-weight:700;color:var(--acc);margin-top:2px;letter-spacing:.5px">—</div>
           </div>
         </div>
+
+        <!-- Barra de progresso até o próximo scan -->
+        <div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:10px">
+          <div id="motorProg" style="height:100%;background:linear-gradient(90deg,var(--acc),var(--grn));width:0%;transition:width .8s ease"></div>
+        </div>
+
+        <!-- ATIVOS EM OBSERVAÇÃO / ANALISANDO -->
+        <div id="motorPairsBox" style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-family:var(--f2);font-size:9px;color:var(--t3);letter-spacing:1.5px" id="motorPairsLabel">🎯 EM OBSERVAÇÃO</div>
+            <div style="font-family:var(--f2);font-size:9px;color:var(--t3)"><span id="motorPairsCount">0</span> pares</div>
+          </div>
+          <div id="motorPairsList" style="display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow:hidden"></div>
+        </div>
+
         <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--brd)">
           <div style="font-family:var(--f2);font-size:10px;color:var(--t2)">
-            <span style="color:var(--t3)">Pares:</span> <span id="motorPairs" style="color:var(--t1);font-weight:600">—</span> ·
             <span style="color:var(--t3)">Sinais 24h:</span> <span id="motor24h" style="color:var(--grn);font-weight:600">0</span>
           </div>
           <button onclick="goPage('alert',document.querySelector('.nav-item:nth-child(4)'))" style="padding:4px 10px;background:transparent;border:1px solid var(--acc);border-radius:12px;color:var(--acc);font-family:var(--f2);font-size:9px;cursor:pointer;letter-spacing:1px">CONFIGURAR</button>
@@ -581,7 +602,7 @@ async function doSignup(){
   if(r2.error){aMsg('Conta criada. Faça login.',false);swAuth('login',document.querySelector('.auth-tab'));return;}
   curUser=r2.data.user;checkAccess();
 }
-async function doLogout(){stopAutoScan();if(perfMonitorIv){clearInterval(perfMonitorIv);perfMonitorIv=null;}if(window._tickerIv){clearInterval(window._tickerIv);window._tickerIv=null;}if(window._dashIv){clearInterval(window._dashIv);window._dashIv=null;}if(window._healthIv){clearInterval(window._healthIv);window._healthIv=null;}if(window._profileIv){clearInterval(window._profileIv);window._profileIv=null;}localStorage.removeItem(uKey('autoscan'));if(sb)await sb.auth.signOut();curUser=null;curProfile=null;signals=[];monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];showAuth();}
+async function doLogout(){stopAutoScan();if(perfMonitorIv){clearInterval(perfMonitorIv);perfMonitorIv=null;}if(window._tickerIv){clearInterval(window._tickerIv);window._tickerIv=null;}if(window._dashIv){clearInterval(window._dashIv);window._dashIv=null;}if(window._healthIv){clearInterval(window._healthIv);window._healthIv=null;}if(window._profileIv){clearInterval(window._profileIv);window._profileIv=null;}if(window._motorIv){clearInterval(window._motorIv);window._motorIv=null;}localStorage.removeItem(uKey('autoscan'));if(sb)await sb.auth.signOut();curUser=null;curProfile=null;signals=[];monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];showAuth();}
 
 var _fpSent=false;
 async function forgotPass(){
@@ -665,28 +686,15 @@ function showApp(){
   // Auto-refresh dashboard (livePrice dos abertos) a cada 30s
   if(window._dashIv)clearInterval(window._dashIv);
   window._dashIv=setInterval(function(){updateDash();updateMotorStatus();},30000);
-  // Refetch profile a cada 2min (pega last_scan_at + sinais novos gerados pelo Worker)
+  // Tick de 1 segundo APENAS pra o countdown do motor (leve, só atualiza textos)
+  if(window._motorIv)clearInterval(window._motorIv);
+  window._motorIv=setInterval(motorTick,1000);
+  // Refetch profile adaptativo (usa _refetchProfile global)
   if(window._profileIv)clearInterval(window._profileIv);
-  window._profileIv=setInterval(async function(){
-    if(!curUser||!sb)return;
-    try{
-      var r=await sb.from('profiles').select('*').eq('id',curUser.id).single();
-      if(r.data){
-        curProfile=r.data;
-        // Re-merge sinais da nuvem com os locais (dedup por ID)
-        var sbSigs=safeJSON(curProfile.signals_data,null);
-        if(Array.isArray(sbSigs)&&sbSigs.length){
-          var ids={};signals.forEach(function(s){if(s&&s.id)ids[s.id]=true;});
-          var newOnes=sbSigs.filter(function(s){return s&&s.id&&!ids[s.id];});
-          if(newOnes.length){
-            signals=newOnes.concat(signals).slice(0,100);
-            renderSignals();updateDash();
-          }
-        }
-        updateMotorStatus();
-      }
-    }catch(e){}
-  },120000);
+  _profileFastMode=false;
+  window._profileIv=setInterval(_refetchProfile,120000);
+  // Força primeiro refetch depois de 5s pra sincronizar estado atual do Worker
+  setTimeout(_refetchProfile,5000);
   // Health check Worker a cada 2min
   checkEngineHealth();
   if(window._healthIv)clearInterval(window._healthIv);
@@ -2087,23 +2095,148 @@ async function checkEngineHealth(){
   }catch(e){el.textContent='● Offline';el.style.color='var(--red)';}
 }
 
-// ── MOTOR IA AO VIVO (dashboard card) ──
+// ── MOTOR IA AO VIVO (dashboard card) — TEMPO REAL com Supabase + Binance ──
+// Formata segundos em HH:MM:SS ou MM:SS
+function fmtCountdown(sec){
+  if(sec<=0)return '00:00';
+  var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+  var pad=function(n){return n<10?'0'+n:''+n;};
+  if(h>0)return pad(h)+':'+pad(m)+':'+pad(s);
+  return pad(m)+':'+pad(s);
+}
+
+// Cache de preços ao vivo da Binance
+var motorLivePrices={};
+var motorLivePricesAt=0;
+
+// Fetch REAL dos preços Binance pros pares monitorados
+async function fetchMotorLivePrices(){
+  if(!Array.isArray(monitored)||!monitored.length)return;
+  // Rate limit: no máximo 1 req a cada 10s (lista não muda rápido)
+  if(Date.now()-motorLivePricesAt<10000)return;
+  motorLivePricesAt=Date.now();
+  try{
+    var symbolsParam=encodeURIComponent(JSON.stringify(monitored));
+    var r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols='+symbolsParam);
+    if(!r.ok)return;
+    var d=await r.json();
+    if(Array.isArray(d)){
+      d.forEach(function(t){motorLivePrices[t.symbol]=parseFloat(t.price);});
+    }
+  }catch(e){/* silent */}
+}
+
+// Formata preço com casas decimais inteligentes
+function fmtPairPrice(p){
+  if(!p||isNaN(p))return '';
+  if(p>=1000)return '$'+p.toLocaleString('en-US',{maximumFractionDigits:0});
+  if(p>=100)return '$'+p.toFixed(1);
+  if(p>=1)return '$'+p.toFixed(3);
+  if(p>=0.01)return '$'+p.toFixed(4);
+  return '$'+p.toFixed(6);
+}
+
+// Renderiza os chips dos pares com estado REAL do scan
+function renderMotorPairs(scanState,progress){
+  var listEl=document.getElementById('motorPairsList');
+  var labelEl=document.getElementById('motorPairsLabel');
+  var countEl=document.getElementById('motorPairsCount');
+  if(!listEl)return;
+  var pairs=Array.isArray(monitored)?monitored:[];
+  if(countEl)countEl.textContent=pairs.length;
+
+  if(!pairs.length){
+    listEl.innerHTML='<div style="font-family:var(--f2);font-size:10px;color:var(--t3);padding:4px">Nenhum par monitorado. Vá em 🔔 Alertas para adicionar.</div>';
+    if(labelEl)labelEl.textContent='⚠ SEM PARES';
+    return;
+  }
+
+  // Indexa o que o Worker reportou
+  var processed={};
+  var currentPair=null;
+  if(progress){
+    (progress.processed||[]).forEach(function(p){processed[p.pair]={result:p.result,price:p.price};});
+    currentPair=progress.current_pair;
+  }
+
+  var html='';
+  pairs.forEach(function(sym){
+    var name=sym.replace('USDT','');
+    var livePrice=motorLivePrices[sym]||0;
+    var priceStr=fmtPairPrice(livePrice);
+    var cls='pair-chip';
+    var prefix='';
+    var suffix=priceStr?' <span style="opacity:.6;font-size:9px">'+priceStr+'</span>':'';
+
+    if(scanState==='scanning'){
+      if(currentPair===sym){
+        cls='pair-chip scanning';prefix='⚡ ';
+      }else if(processed[sym]){
+        var res=processed[sym].result;
+        if(res==='LONG'){cls='pair-chip signal';prefix='📡 ';}
+        else if(res==='SHORT'){cls='pair-chip signal';prefix='📡 ';}
+        else if(res==='AGUARDAR'){cls='pair-chip scanned';prefix='⌛ ';}
+        else{cls='pair-chip scanned';prefix='· ';}
+      }else{
+        cls='pair-chip waiting';prefix='';
+      }
+    }else if(scanState==='done'){
+      if(processed[sym]){
+        var res2=processed[sym].result;
+        if(res2==='LONG'){cls='pair-chip signal';prefix='📡 ';}
+        else if(res2==='SHORT'){cls='pair-chip signal';prefix='📡 ';}
+        else if(res2==='AGUARDAR'){cls='pair-chip scanned';prefix='⌛ ';}
+        else{cls='pair-chip scanned';prefix='· ';}
+      }
+    }else{
+      // waiting/idle — mostra preço ao vivo em todos
+      cls='pair-chip waiting';
+    }
+
+    html+='<span class="'+cls+'">'+prefix+name+suffix+'</span>';
+  });
+  listEl.innerHTML=html;
+
+  // Label
+  if(scanState==='scanning'){
+    var done=progress?(progress.pairs_done||0):0;
+    var total=progress?(progress.pairs_total||pairs.length):pairs.length;
+    if(labelEl)labelEl.textContent='🔥 ANALISANDO AGORA ('+done+'/'+total+')';
+  }else if(scanState==='done'){
+    var found=progress?(progress.signals_found||0):0;
+    if(labelEl)labelEl.textContent='✓ SCAN CONCLUÍDO · '+found+' sinal'+(found===1?'':'is');
+  }else{
+    if(labelEl)labelEl.textContent='🎯 EM OBSERVAÇÃO (preços ao vivo)';
+  }
+
+  listEl.style.maxHeight=(scanState==='scanning'||scanState==='done')?'none':'90px';
+}
+
 function updateMotorStatus(){
   if(!curProfile)return;
   var dotEl=document.getElementById('motorDot');
+  var titleEl=document.getElementById('motorTitle');
   var lastEl=document.getElementById('motorLast');
   var nextEl=document.getElementById('motorNext');
-  var pairsEl=document.getElementById('motorPairs');
   var badgeEl=document.getElementById('motorBadge');
   var sig24El=document.getElementById('motor24h');
-  if(!lastEl)return;
+  var progEl=document.getElementById('motorProg');
+  if(!lastEl||!nextEl)return;
 
   var autoScanOn=curProfile.auto_scan||false;
   var scanIntHours=parseInt(curProfile.scan_interval)||4;
+  var scanIntMs=scanIntHours*3600000;
   var lastScan=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
   var now=Date.now();
 
-  // Último scan — texto humano
+  // ── LÊ ESTADO REAL DO WORKER ──
+  var scanStatus=curProfile.scan_status||'idle';
+  var scanProgress=null;
+  if(curProfile.scan_progress){
+    try{scanProgress=JSON.parse(curProfile.scan_progress);}catch(e){}
+  }
+
+  // ── ÚLTIMO SCAN ──
   if(lastScan>0){
     var mins=Math.round((now-lastScan)/60000);
     if(mins<1)lastEl.textContent='agora há pouco';
@@ -2116,36 +2249,141 @@ function updateMotorStatus(){
     lastEl.style.color='var(--amb)';
   }
 
-  // Próximo scan — texto humano
-  if(autoScanOn){
+  // ── DESATIVADO ──
+  if(!autoScanOn){
+    nextEl.textContent='DESATIVADO';
+    nextEl.style.color='var(--red)';
+    nextEl.style.fontSize='14px';
+    if(dotEl){dotEl.style.background='var(--red)';dotEl.style.boxShadow='0 0 10px var(--red)';}
+    if(titleEl)titleEl.textContent='SPEC MIND · OFF';
+    if(badgeEl){badgeEl.textContent='OFF';badgeEl.style.color='var(--red)';badgeEl.style.borderColor='var(--red)';badgeEl.style.background='rgba(255,82,82,.15)';}
+    if(progEl)progEl.style.width='0%';
+    renderMotorPairs('waiting',null);
+    var cutoff=now-86400000;
+    var sig24=signals.filter(function(s){return s&&s.time&&new Date(s.time).getTime()>cutoff;}).length;
+    if(sig24El)sig24El.textContent=sig24;
+    return;
+  }
+
+  // ── ESTADO REAL: SCANNING ──
+  if(scanStatus==='scanning'&&scanProgress){
+    var currentStr=scanProgress.current_pair?scanProgress.current_pair.replace('USDT',''):'preparando';
+    nextEl.innerHTML='<span style="color:var(--acc)">⚡ '+currentStr+'</span>';
+    nextEl.style.fontSize='14px';
+    if(dotEl){dotEl.style.background='var(--acc)';dotEl.style.boxShadow='0 0 14px var(--acc)';}
+    if(titleEl)titleEl.textContent='SPEC MIND · SCAN AO VIVO';
+    if(badgeEl){badgeEl.textContent='LIVE';badgeEl.style.color='var(--acc)';badgeEl.style.borderColor='var(--acc)';badgeEl.style.background='var(--accd)';}
+    var pctScan=scanProgress.pairs_total>0?(scanProgress.pairs_done/scanProgress.pairs_total*100):0;
+    if(progEl)progEl.style.width=pctScan.toFixed(1)+'%';
+    renderMotorPairs('scanning',scanProgress);
+  }
+  // ── ESTADO REAL: DONE ──
+  else if(scanStatus==='done'&&scanProgress){
+    var found=scanProgress.signals_found||0;
+    nextEl.innerHTML='<span style="color:var(--grn)">✓ '+found+' sinal'+(found===1?'':'is')+'</span>';
+    nextEl.style.fontSize='13px';
+    if(dotEl){dotEl.style.background='var(--grn)';dotEl.style.boxShadow='0 0 12px var(--grn)';}
+    if(titleEl)titleEl.textContent='SPEC MIND · SCAN CONCLUÍDO';
+    if(badgeEl){badgeEl.textContent=scanIntHours+'h';badgeEl.style.color='var(--grn)';badgeEl.style.borderColor='var(--grn)';badgeEl.style.background='var(--grnd)';}
+    if(progEl)progEl.style.width='100%';
+    renderMotorPairs('done',scanProgress);
+  }
+  // ── IDLE: countdown normal ──
+  else{
+    var nextMs,elapsedMs;
     if(lastScan>0){
-      var nextMs=lastScan+scanIntHours*3600000;
-      var diffMin=Math.round((nextMs-now)/60000);
-      if(diffMin<=0)nextEl.textContent='a qualquer momento';
-      else if(diffMin<60)nextEl.textContent='em '+diffMin+' min';
-      else nextEl.textContent='em '+Math.floor(diffMin/60)+'h '+(diffMin%60)+'min';
-      nextEl.style.color='var(--acc)';
+      nextMs=lastScan+scanIntMs;
+      elapsedMs=now-lastScan;
     }else{
-      nextEl.textContent='em breve';
+      var minsNextCron=15-(new Date().getMinutes()%15);
+      nextMs=now+minsNextCron*60000;
+      elapsedMs=0;
+    }
+    var diffSec=Math.max(0,Math.round((nextMs-now)/1000));
+    var pct=Math.min(100,Math.max(0,(elapsedMs/scanIntMs)*100));
+
+    if(diffSec<=0){
+      nextEl.innerHTML='<span style="color:var(--acc)">iniciando em breve</span>';
+      nextEl.style.fontSize='13px';
+    }else{
+      nextEl.textContent=fmtCountdown(diffSec);
+      nextEl.style.fontSize='18px';
       nextEl.style.color='var(--acc)';
     }
     if(dotEl){dotEl.style.background='var(--grn)';dotEl.style.boxShadow='0 0 10px var(--grn)';}
+    if(titleEl)titleEl.textContent='SPEC MIND · ATIVO';
     if(badgeEl){badgeEl.textContent=scanIntHours+'h';badgeEl.style.color='var(--grn)';badgeEl.style.borderColor='var(--grn)';badgeEl.style.background='var(--grnd)';}
-  }else{
-    nextEl.textContent='desativado';
-    nextEl.style.color='var(--red)';
-    if(dotEl){dotEl.style.background='var(--red)';dotEl.style.boxShadow='0 0 10px var(--red)';}
-    if(badgeEl){badgeEl.textContent='OFF';badgeEl.style.color='var(--red)';badgeEl.style.borderColor='var(--red)';badgeEl.style.background='var(--red-dim,rgba(255,82,82,.15))';}
+    if(progEl)progEl.style.width=pct.toFixed(1)+'%';
+    renderMotorPairs('waiting',null);
   }
 
-  // Pares monitorados
-  var pairsCount=Array.isArray(monitored)?monitored.length:0;
-  if(pairsEl)pairsEl.textContent=pairsCount;
+  // Sinais 24h
+  var cutoff24=now-86400000;
+  var sig24v=signals.filter(function(s){return s&&s.time&&new Date(s.time).getTime()>cutoff24;}).length;
+  if(sig24El)sig24El.textContent=sig24v;
+}
 
-  // Sinais últimas 24h
-  var cutoff=now-86400000;
-  var sig24=signals.filter(function(s){return s&&s.time&&new Date(s.time).getTime()>cutoff;}).length;
-  if(sig24El)sig24El.textContent=sig24;
+// ── REFETCH PROFILE ADAPTATIVO (global para ser acessível do motorTick) ──
+var _profileFastMode=false;
+async function _refetchProfile(){
+  if(!curUser||!sb)return;
+  try{
+    var r=await sb.from('profiles').select('*').eq('id',curUser.id).single();
+    if(r.data){
+      curProfile=r.data;
+      var sbSigs=safeJSON(curProfile.signals_data,null);
+      if(Array.isArray(sbSigs)&&sbSigs.length){
+        var ids={};signals.forEach(function(s){if(s&&s.id)ids[s.id]=true;});
+        var newOnes=sbSigs.filter(function(s){return s&&s.id&&!ids[s.id];});
+        if(newOnes.length){
+          signals=newOnes.concat(signals).slice(0,100);
+          renderSignals();updateDash();
+        }
+      }
+      updateMotorStatus();
+      var scanning=curProfile.scan_status==='scanning'||curProfile.scan_status==='done';
+      if(scanning&&!_profileFastMode){
+        _profileFastMode=true;
+        if(window._profileIv)clearInterval(window._profileIv);
+        window._profileIv=setInterval(_refetchProfile,3000);
+      }else if(!scanning&&_profileFastMode){
+        _profileFastMode=false;
+        window._anticipating=false;
+        if(window._profileIv)clearInterval(window._profileIv);
+        window._profileIv=setInterval(_refetchProfile,120000);
+      }
+    }
+  }catch(e){}
+}
+
+// Tick 1s: countdown + preço ao vivo + ativa polling rápido quando perto do scan
+function motorTick(){
+  if(!curProfile||document.visibilityState!=='visible')return;
+  try{
+    updateMotorStatus();
+    var scanStatus=curProfile.scan_status||'idle';
+    if(scanStatus!=='scanning'){fetchMotorLivePrices();}
+
+    // ANTECIPAÇÃO: se faltam <30s pro próximo scan agendado, força polling rápido
+    var autoScanOn=curProfile.auto_scan||false;
+    if(autoScanOn&&scanStatus==='idle'){
+      var lastScan=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
+      var scanIntMs=(parseInt(curProfile.scan_interval)||4)*3600000;
+      if(lastScan>0){
+        var secToNext=Math.round(((lastScan+scanIntMs)-Date.now())/1000);
+        if(secToNext<=30&&secToNext>-300&&window._profileIv&&!window._anticipating){
+          window._anticipating=true;
+          // Polling rápido pra detectar o início do scan
+          if(window._profileIv)clearInterval(window._profileIv);
+          window._profileIv=setInterval(function(){
+            if(typeof _refetchProfile==='function')_refetchProfile();
+          },5000);
+          // Depois de 6 minutos, desativa antecipação (scan já deve ter sido detectado)
+          setTimeout(function(){window._anticipating=false;},360000);
+        }
+      }
+    }
+  }catch(e){}
 }
 
 // Trial warning banner
