@@ -381,6 +381,25 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
         <div style="font-family:var(--f2);font-size:10px;color:var(--t2);margin-top:4px" id="trialWarnTxt">—</div>
         <a href="https://wa.me/5562991704188?text=Quero%20assinar%20o%20SPECTRA" target="_blank" style="display:block;margin-top:8px;padding:8px;background:var(--grn);color:#000;text-decoration:none;text-align:center;border-radius:6px;font-family:var(--f2);font-size:11px;font-weight:600">Assinar agora</a>
       </div>
+      <!-- CTA PREMIUM PERMANENTE (só aparece se não for premium) -->
+      <div id="premiumCTA" style="display:none;background:var(--bg2);border:2px solid var(--grn);border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="text-align:center;margin-bottom:12px">
+          <div style="font-family:var(--f2);font-size:10px;color:var(--grn);letter-spacing:3px;font-weight:700">★ PREMIUM ★</div>
+          <div style="font-size:14px;color:var(--t1);margin-top:6px;font-weight:600">Operador profissional</div>
+          <div style="font-family:var(--f2);font-size:10px;color:var(--t2);margin-top:4px;line-height:1.5">Sinais ilimitados · Monitor 24/7 · 7 Pilares · Telegram</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin:10px 0">
+          <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px"><span style="font-family:var(--f2);font-size:11px;color:var(--t2)">Mensal</span><span style="font-family:var(--f2);font-size:13px;font-weight:700;color:var(--t1)">R$ 97</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--amb);border-radius:6px"><span style="font-family:var(--f2);font-size:11px;color:var(--amb)">Trimestral <span style="font-size:9px;color:var(--t3)">(-15%)</span></span><span style="font-family:var(--f2);font-size:13px;font-weight:700;color:var(--amb)">R$ 247</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--grn);border-radius:6px"><span style="font-family:var(--f2);font-size:11px;color:var(--grn)">Anual <span style="font-size:9px;color:var(--t3)">(-31%)</span></span><span style="font-family:var(--f2);font-size:13px;font-weight:700;color:var(--grn)">R$ 797</span></div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;text-align:center;margin-bottom:8px">
+          <div style="font-family:var(--f2);font-size:9px;color:var(--acc);letter-spacing:2px;margin-bottom:4px">PIX (telefone)</div>
+          <div onclick="navigator.clipboard.writeText('62991704188');toast('Chave copiada!','ok')" style="font-family:var(--f2);font-size:14px;color:var(--t1);cursor:pointer;font-weight:700">62991704188</div>
+          <div style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:2px">Jamis Costa da Silva · Toque pra copiar</div>
+        </div>
+        <a href="https://wa.me/5562991704188?text=Ol%C3%A1!%20Quero%20assinar%20o%20SPECTRA.%20Segue%20comprovante%20PIX." target="_blank" style="display:block;padding:12px;background:var(--grn);color:#000;text-decoration:none;text-align:center;border-radius:8px;font-family:var(--f1);font-size:12px;font-weight:700;letter-spacing:1px">💬 ENVIAR COMPROVANTE · WHATSAPP</a>
+      </div>
       <div class="sec">MOTOR IA</div>
       <div class="acc-card">
         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -548,6 +567,8 @@ function showApp(){
     var ap=document.getElementById('accPlan');if(ap)ap.textContent=isPrem?'Premium':'Trial ('+trialDays+' dias)';
     var ad=document.getElementById('accDays');if(ad)ad.textContent=isPrem?'Ilimitado':daysLeft+' dias';
     var ac=document.getElementById('accDate');if(ac){var cd=curProfile.created_at?new Date(curProfile.created_at):new Date();ac.textContent=cd.toLocaleDateString('pt-BR');}
+    // CTA Premium — só pra quem não é premium
+    var ctaEl=document.getElementById('premiumCTA');if(ctaEl)ctaEl.style.display=isPrem?'none':'block';
     // Telegram
     var tgIn=document.getElementById('tgChatInput');
     var savedChatId=curProfile.telegram_chat_id||localStorage.getItem(uKey('tg_chat_id'));
@@ -609,7 +630,7 @@ function stopPillarAnim(result){
 }
 
 // ── CONFIG ──
-var PROXIES=['https://especulador-specmind.jamiscosta81.workers.dev','https://especulador-specmind.jamiscosta81.workers.dev'];
+var PROXIES=['https://especulador-specmind.jamiscosta81.workers.dev'];
 var pIdx=0;
 var signals=[];
 var monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
@@ -1937,10 +1958,19 @@ function checkTrialWarning(){
   var tStart=new Date(trialStart);if(isNaN(tStart.getTime()))tStart=new Date();
   var endMs=tStart.getTime()+trialDays*86400000;
   var hoursLeft=(endMs-Date.now())/3600000;
-  if(hoursLeft<=24&&hoursLeft>0){
+  var daysLeft=hoursLeft/24;
+  // Banner aparece quando restam ≤ 2 dias OU ≤ 48h
+  if(hoursLeft<=48&&hoursLeft>0){
     el.style.display='block';
+    el.style.cursor='pointer';
+    el.onclick=function(){window.open('https://wa.me/5562991704188?text=Ol%C3%A1!%20Quero%20assinar%20o%20SPECTRA.%20Segue%20comprovante%20PIX.','_blank');};
     var txt=document.getElementById('trialWarnTxt');
-    if(txt)txt.textContent=hoursLeft<1?'Menos de 1 hora restante':Math.floor(hoursLeft)+'h restantes. Assine pra não perder os sinais.';
+    var msg;
+    if(hoursLeft<1)msg='Menos de 1 hora! Toque aqui pra assinar agora.';
+    else if(hoursLeft<=6)msg='⚡ Menos de '+Math.ceil(hoursLeft)+'h! Toque pra assinar.';
+    else if(hoursLeft<=24)msg=Math.ceil(hoursLeft)+'h restantes. R$97/mês • Toque pra assinar.';
+    else msg=Math.ceil(daysLeft)+' dias restantes. Toque pra garantir seus sinais.';
+    if(txt)txt.textContent=msg;
   }else{el.style.display='none';}
 }
 
