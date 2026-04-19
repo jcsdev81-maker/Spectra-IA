@@ -221,7 +221,13 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 <div class="shell" id="shell" style="display:none">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:10px"><h1>SPECTRA</h1><span id="planBadge" style="font-family:var(--f2);font-size:10px;color:var(--acc);padding:2px 6px;background:var(--accd);border:1px solid var(--acc);border-radius:3px">SPEC MIND</span></div>
-    <div class="topbar-r" id="topInfo">7 Pilares • IA</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="scanStatusPill" onclick="goPage('alert',document.querySelector('.nav-item:nth-child(4)'))" style="display:flex;align-items:center;gap:5px;font-family:var(--f2);font-size:10px;padding:4px 10px;border-radius:12px;cursor:pointer;background:var(--bg);border:1px solid var(--t3);color:var(--t3);transition:all .2s" title="Clique para configurar">
+        <span id="scanStatusDot" style="width:6px;height:6px;border-radius:50%;background:var(--t3);display:inline-block"></span>
+        <span id="scanStatusTxt">AUTO-SCAN</span>
+      </span>
+      <div class="topbar-r" id="topInfo">7 Pilares • IA</div>
+    </div>
   </div>
   <div class="content">
     <!-- DASHBOARD PRO -->
@@ -1624,29 +1630,19 @@ function renderStrongestSignal(s){
     var lastScan=curProfile&&curProfile.last_scan_at;
     var h='<div style="background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:18px;text-align:center">';
     if(!hasPairs){
-      // Passo 1: configurar pares
+      // Só AQUI mostra CTA grande (é o único bloqueio real: sem pares = sem análise)
       h+='<div style="font-size:32px;margin-bottom:8px;opacity:.7">🎯</div>';
       h+='<div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:6px">Primeiro passo</div>';
       h+='<div style="font-family:var(--f2);font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:12px">Escolha os pares crypto que você quer que o SPEC MIND monitore.<br>A IA vai analisar cada um usando os 7 pilares.</div>';
       h+='<button onclick="goPage(\'alert\',document.querySelector(\'.nav-item:nth-child(4)\'))" style="padding:10px 20px;background:var(--grd);border:none;border-radius:8px;color:#000;font-family:var(--f1);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer">🔔 ESCOLHER PARES</button>';
-    }else if(!scanOn){
-      // Passo 2: ativar auto-scan
-      h+='<div style="font-size:32px;margin-bottom:8px;opacity:.7">⚡</div>';
-      h+='<div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:6px">Ative o auto-scan</div>';
-      h+='<div style="font-family:var(--f2);font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:12px">Você tem <strong style="color:var(--acc)">'+monitored.length+' pares</strong> monitorados.<br>Ative o auto-scan pra IA analisar automaticamente.</div>';
-      h+='<button onclick="goPage(\'alert\',document.querySelector(\'.nav-item:nth-child(4)\'))" style="padding:10px 20px;background:var(--grd);border:none;border-radius:8px;color:#000;font-family:var(--f1);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer">🔔 ATIVAR AUTO-SCAN</button>';
-    }else if(!lastScan){
-      // Passo 3: aguardando primeiro scan
-      h+='<div style="font-size:32px;margin-bottom:8px;opacity:.7">⏳</div>';
-      h+='<div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:6px">Auto-scan ativado!</div>';
-      h+='<div style="font-family:var(--f2);font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:12px">Aguardando o primeiro ciclo da IA.<br>Veja o countdown no topo da tela.</div>';
-      h+='<div style="font-family:var(--f2);font-size:10px;color:var(--acc);background:var(--accd);padding:6px 12px;border-radius:20px;display:inline-block;border:1px solid var(--acc)">Ou use ⚡ Analisar manualmente</div>';
     }else{
-      // Tem scan rodando mas 0 setup de alta confluência
-      h+='<div style="font-size:32px;margin-bottom:8px;opacity:.7">📡</div>';
-      h+='<div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:6px">Nenhum setup de alta confluência</div>';
-      h+='<div style="font-family:var(--f2);font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:12px">Mercado lateral ou sem sinal claro nos 7 pilares.<br>Disciplina: aguardar é parte da operação.</div>';
-      h+='<div style="font-family:var(--f2);font-size:10px;color:var(--t3);background:var(--bg);padding:8px;border-radius:6px;text-align:left;line-height:1.6"><strong style="color:var(--grn)">💡 O SPEC MIND só gera sinal quando:</strong><br>• ≥3 pilares confluem na direção<br>• R:R ≥ 3:1 garantido<br>• Preço na Golden Zone (LONG) ou validação SHORT</div>';
+      // Tem pares — mensagem discreta e educativa (o status real do scan fica no pill do topo)
+      h+='<div style="font-size:28px;margin-bottom:6px;opacity:.5">📡</div>';
+      h+='<div style="font-family:var(--f2);font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:8px">Nenhum setup de alta confluência no momento.</div>';
+      h+='<div style="font-family:var(--f2);font-size:10px;color:var(--t3);background:var(--bg);padding:10px;border-radius:6px;text-align:left;line-height:1.6"><strong style="color:var(--grn)">💡 O SPEC MIND só gera sinal quando:</strong><br>• ≥3 pilares confluem na direção<br>• R:R ≥ 3:1 garantido<br>• Preço na Golden Zone (LONG) ou validação SHORT</div>';
+      if(!scanOn){
+        h+='<div style="font-family:var(--f2);font-size:10px;color:var(--amb);margin-top:8px">Auto-scan desativado — <span style="color:var(--acc);cursor:pointer;text-decoration:underline" onclick="goPage(\'alert\',document.querySelector(\'.nav-item:nth-child(4)\'))">ativar</span></div>';
+      }
     }
     h+='</div>';
     el.innerHTML=h;
@@ -2148,6 +2144,50 @@ function setScanInterval(hours,btn){
   try{updateMotorStatus();}catch(e){}
 }
 
+// ── STATUS PILL do topo: reflete auto-scan em tempo real ──
+function updateScanStatusPill(){
+  var pill=document.getElementById('scanStatusPill');
+  var dot=document.getElementById('scanStatusDot');
+  var txt=document.getElementById('scanStatusTxt');
+  if(!pill||!dot||!txt)return;
+  // Múltiplas fontes — se Supabase disser off mas temos sinais recentes, é on
+  var autoScanSupabase=curProfile&&curProfile.auto_scan===true;
+  var autoScanLocal=(typeof autoScanOn!=='undefined'&&autoScanOn===true);
+  var autoScanLS=localStorage.getItem(uKey('autoscan'))==='1';
+  var hasRecentSignal=signals&&signals.some(function(s){
+    if(!s||!s.time)return false;
+    return (Date.now()-new Date(s.time).getTime())<(3*3600000);
+  });
+  var scanOn=autoScanSupabase||autoScanLocal||autoScanLS||hasRecentSignal;
+  var scanStatus=curProfile&&curProfile.scan_status;
+  if(scanStatus==='scanning'){
+    // Scan rodando AGORA
+    dot.style.background='var(--acc)';
+    dot.style.boxShadow='0 0 6px var(--acc)';
+    dot.style.animation='pulseDot 1s infinite';
+    txt.textContent='SCAN LIVE';
+    pill.style.borderColor='var(--acc)';
+    pill.style.color='var(--acc)';
+    pill.style.background='var(--accd)';
+  }else if(scanOn){
+    dot.style.background='var(--grn)';
+    dot.style.boxShadow='0 0 4px var(--grn)';
+    dot.style.animation='pulseDot 2s infinite';
+    txt.textContent='ATIVO';
+    pill.style.borderColor='var(--grn)';
+    pill.style.color='var(--grn)';
+    pill.style.background='var(--grnd)';
+  }else{
+    dot.style.background='var(--t3)';
+    dot.style.boxShadow='none';
+    dot.style.animation='none';
+    txt.textContent='OFF';
+    pill.style.borderColor='var(--t3)';
+    pill.style.color='var(--t3)';
+    pill.style.background='var(--bg)';
+  }
+}
+
 function toggleAutoScan(btn){
   var novoEstado=!autoScanOn;
   // Optimistic UI: atualiza imediatamente
@@ -2156,6 +2196,7 @@ function toggleAutoScan(btn){
   if(autoScanOn){startAutoScan()}else{stopAutoScan()}
   if(curProfile)curProfile.auto_scan=autoScanOn;
   localStorage.setItem(uKey('autoscan'),autoScanOn?'1':'0');
+  updateScanStatusPill();
   // ── FIX v10.2: trata erro do save e faz rollback ──
   if(sb&&curUser){
     sb.from('profiles').update({auto_scan:novoEstado}).eq('id',curUser.id).then(function(r){
@@ -2167,6 +2208,7 @@ function toggleAutoScan(btn){
         if(curProfile)curProfile.auto_scan=autoScanOn;
         localStorage.setItem(uKey('autoscan'),autoScanOn?'1':'0');
         if(autoScanOn){startAutoScan()}else{stopAutoScan()}
+        updateScanStatusPill();
         toast('Erro ao salvar: '+(r.error.message||'tente novamente'),'err');
       }else{
         toast(novoEstado?'Auto-scan ATIVADO — salvo na nuvem':'Auto-scan desativado','ok');
@@ -2177,6 +2219,7 @@ function toggleAutoScan(btn){
       autoScanOn=!novoEstado;
       btn.classList.toggle('on');
       if(curProfile)curProfile.auto_scan=autoScanOn;
+      updateScanStatusPill();
       toast('Sem internet — não foi possível salvar','err');
     });
   }else{
@@ -2521,10 +2564,31 @@ function updateMotorStatus(){
   var progEl=document.getElementById('motorProg');
   if(!lastEl||!nextEl)return;
 
-  var autoScanOn=curProfile.auto_scan||false;
+  // ── AUTO-SCAN: múltiplas fontes da verdade ──
+  // Supabase é a autoridade, mas se tiver inconsistência,
+  // confia em: (1) presença de sinais recentes, (2) variável local, (3) localStorage
+  var autoScanSupabase=curProfile.auto_scan===true;
+  var autoScanLocal=(typeof autoScanOn!=='undefined'&&autoScanOn===true);
+  var autoScanLS=localStorage.getItem(uKey('autoscan'))==='1';
+  // Se teve sinal nas últimas 3h, o Worker está rodando pra mim mesmo que o campo esteja dessincrono
+  var hasRecentSignal=signals.some(function(s){
+    if(!s||!s.time)return false;
+    return (Date.now()-new Date(s.time).getTime())<(3*3600000);
+  });
+  var autoScanReal=autoScanSupabase||autoScanLocal||autoScanLS||hasRecentSignal;
+
   var scanIntHours=parseFloat(curProfile.scan_interval)||4;
   var scanIntMs=scanIntHours*3600000;
-  var lastScan=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
+
+  // ── ÚLTIMO SCAN: do Supabase, OU inferido do sinal mais recente se Supabase não atualizou ──
+  var lastScanSupabase=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
+  var lastScanInferred=0;
+  if(signals.length>0){
+    var maxT=0;
+    signals.forEach(function(s){if(s&&s.time){var t=new Date(s.time).getTime();if(t>maxT)maxT=t;}});
+    lastScanInferred=maxT;
+  }
+  var lastScan=Math.max(lastScanSupabase,lastScanInferred);
   var now=Date.now();
 
   // ── LÊ ESTADO REAL DO WORKER ──
@@ -2534,7 +2598,7 @@ function updateMotorStatus(){
     try{scanProgress=JSON.parse(curProfile.scan_progress);}catch(e){}
   }
 
-  // ── ÚLTIMO SCAN ──
+  // ── ÚLTIMO SCAN (display) ──
   if(lastScan>0){
     var mins=Math.round((now-lastScan)/60000);
     if(mins<1)lastEl.textContent='agora há pouco';
@@ -2548,7 +2612,7 @@ function updateMotorStatus(){
   }
 
   // ── DESATIVADO ──
-  if(!autoScanOn){
+  if(!autoScanReal){
     nextEl.textContent='DESATIVADO';
     nextEl.style.color='var(--red)';
     nextEl.style.fontSize='14px';
@@ -2560,8 +2624,12 @@ function updateMotorStatus(){
     var cutoff=now-86400000;
     var sig24=signals.filter(function(s){return s&&s.time&&new Date(s.time).getTime()>cutoff;}).length;
     if(sig24El)sig24El.textContent=sig24;
+    updateScanStatusPill();
     return;
   }
+
+  // A partir daqui, autoScanOn é usado pelo resto do código — sincroniza
+  var autoScanOn=autoScanReal;
 
   // ── ESTADO REAL: SCANNING ──
   if(scanStatus==='scanning'&&scanProgress){
@@ -2641,6 +2709,9 @@ function updateMotorStatus(){
   var cutoff24=now-86400000;
   var sig24v=signals.filter(function(s){return s&&s.time&&new Date(s.time).getTime()>cutoff24;}).length;
   if(sig24El)sig24El.textContent=sig24v;
+
+  // Atualiza pill de status no topo
+  updateScanStatusPill();
 }
 
 // ── REFETCH PROFILE ADAPTATIVO (global para ser acessível do motorTick) ──
