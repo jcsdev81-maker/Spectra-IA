@@ -429,6 +429,11 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 
       <!-- TRADE LIST -->
       <div id="perfList"></div>
+
+      <!-- v10.3: HISTÓRICO DE SCANS (auditoria operador) -->
+      <div class="sec" style="margin-top:16px">🔍 HISTÓRICO DE SCANS <span style="color:var(--t3);font-family:var(--f2);font-size:10px;margin-left:6px">(últimos 20)</span></div>
+      <div id="scanHistoryList"><div class="empty" style="padding:20px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Aguardando primeiros ciclos de scan...</div></div></div>
+      <button onclick="loadScanHistory()" style="width:100%;margin-top:8px;padding:10px;background:transparent;border:1px solid var(--brd);border-radius:8px;color:var(--t2);font-family:var(--f2);font-size:11px;cursor:pointer">🔄 ATUALIZAR HISTÓRICO</button>
     </div>
     <!-- ALERTAS -->
     <div class="page" id="pg-alert">
@@ -446,11 +451,11 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
             <div id="scanIntPlan" style="font-family:var(--f2);font-size:9px;padding:2px 8px;border-radius:10px;background:var(--accd);color:var(--acc);border:1px solid var(--acc)">—</div>
           </div>
           <div id="scanIntOptions" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
-            <button data-int="0.25" onclick="setScanInterval(0.25,this)" class="int-btn">15 min</button>
             <button data-int="0.5" onclick="setScanInterval(0.5,this)" class="int-btn">30 min</button>
             <button data-int="1" onclick="setScanInterval(1,this)" class="int-btn">1 h</button>
             <button data-int="2" onclick="setScanInterval(2,this)" class="int-btn">2 h</button>
             <button data-int="4" onclick="setScanInterval(4,this)" class="int-btn">4 h</button>
+            <button data-int="8" onclick="setScanInterval(8,this)" class="int-btn">8 h</button>
           </div>
           <div id="scanIntHint" style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:6px;line-height:1.4">—</div>
         </div>
@@ -857,7 +862,10 @@ function saveMon(){
   try{localStorage.setItem(uKey('mon'),JSON.stringify(monitored));}catch(e){}
   if(sb&&curUser){
     sb.from('profiles').update({monitored_pairs:JSON.stringify(monitored)}).eq('id',curUser.id).then(function(r){
-      if(r&&r.error)console.warn('[SPECTRA] Sync failed:',r.error.message);
+      if(r&&r.error){
+        console.error('[SPECTRA] Falha ao salvar pares:',r.error);
+        toast('Erro ao salvar pares — verifique conexão','err');
+      }
     });
   }
 }
@@ -1217,7 +1225,7 @@ async function loadBinancePairs(){
 }
 
 // ── NAVIGATION ──
-function goPage(id,btn){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on')});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('pg-'+id).classList.add('on');btn.classList.add('on');if(id==='sig')popPairSel();if(id==='res')renderPerf();if(id==='alert')filterPairs();}
+function goPage(id,btn){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on')});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('pg-'+id).classList.add('on');btn.classList.add('on');if(id==='sig')popPairSel();if(id==='res'){renderPerf();try{loadScanHistory();}catch(e){}}if(id==='alert')filterPairs();}
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast on '+(t||'ok');setTimeout(function(){el.classList.remove('on')},4000);}
 function popPairSel(){filterSigPairs();}
 function filterSigPairs(){
@@ -1703,6 +1711,61 @@ var perfMonitorIv=null;
 
 function startPerfMonitor(){if(perfMonitorIv)return;perfMonitorIv=setInterval(checkOpenTrades,30000);checkOpenTrades();}
 
+// ── v10.3: HISTÓRICO DE SCANS (auditoria do operador) ──
+async function loadScanHistory(){
+  if(!sb||!curUser)return;
+  var el=document.getElementById('scanHistoryList');
+  if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:14px;color:var(--t3);font-family:var(--f2);font-size:11px"><span class="ld" style="vertical-align:middle;margin-right:6px"></span>Carregando histórico...</div>';
+  try{
+    var r=await sb.from('scan_history').select('started_at,finished_at,pairs_scanned,signals_found,aguardar_count,error_count,duration_seconds,pairs_detail').eq('user_id',curUser.id).order('started_at',{ascending:false}).limit(20);
+    if(r.error){
+      el.innerHTML='<div style="text-align:center;padding:14px;color:var(--red);font-family:var(--f2);font-size:11px">Erro: '+(r.error.message||'falha ao carregar')+'</div>';
+      return;
+    }
+    var rows=r.data||[];
+    if(!rows.length){
+      el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Nenhum scan registrado ainda. Aguarde o próximo ciclo.</div></div>';
+      return;
+    }
+    var html='';
+    rows.forEach(function(sc){
+      var dt=new Date(sc.started_at);
+      var dtStr=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      var sig=sc.signals_found||0,ag=sc.aguardar_count||0,er=sc.error_count||0,pr=sc.pairs_scanned||0;
+      var dur=sc.duration_seconds||0,durTxt=dur>=60?Math.floor(dur/60)+'m'+String(dur%60).padStart(2,'0')+'s':dur+'s';
+      var badge=sig>0?'<span style="background:var(--grnd);color:var(--grn);padding:2px 8px;border-radius:4px;font-weight:700;border:1px solid var(--grn)">'+sig+' SINAIS</span>':'<span style="background:var(--ambd);color:var(--amb);padding:2px 8px;border-radius:4px;border:1px solid var(--amb)">SEM SETUP</span>';
+      var bCol=sig>0?'var(--grn)':er>0?'var(--red)':'var(--amb)';
+
+      // Detalhes dos pares (resultado de cada um)
+      var detail='';
+      try{
+        var pairs=Array.isArray(sc.pairs_detail)?sc.pairs_detail:JSON.parse(sc.pairs_detail||'[]');
+        if(pairs.length){
+          detail='<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:8px">';
+          pairs.forEach(function(p){
+            var n=(p.pair||'').replace('USDT','');
+            var res=p.result||'?';
+            var c=res==='LONG'?'var(--grn)':res==='SHORT'?'var(--red)':res==='AGUARDAR'?'var(--amb)':res==='ERRO'?'var(--red)':'var(--t3)';
+            var ic=res==='LONG'?'▲':res==='SHORT'?'▼':res==='AGUARDAR'?'⌛':res==='ERRO'?'✗':'·';
+            detail+='<span style="font-family:var(--f2);font-size:9px;padding:2px 6px;background:var(--bg);border:1px solid '+c+'55;color:'+c+';border-radius:3px">'+ic+' '+n+'</span>';
+          });
+          detail+='</div>';
+        }
+      }catch(e){}
+
+      html+='<div style="background:var(--bg2);border:1px solid var(--brd);border-left:3px solid '+bCol+';border-radius:8px;padding:10px 12px;margin-bottom:6px">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center"><div><span style="font-family:var(--f2);font-size:12px;color:var(--t1);font-weight:600">'+dtStr+'</span> <span style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-left:6px">'+durTxt+'</span></div>'+badge+'</div>';
+      html+='<div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:4px">'+pr+' pares · '+ag+' aguardar'+(er>0?' · <span style="color:var(--red)">'+er+' erro'+(er===1?'':'s')+'</span>':'')+'</div>';
+      html+=detail;
+      html+='</div>';
+    });
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<div style="text-align:center;padding:14px;color:var(--red);font-family:var(--f2);font-size:11px">Erro: '+(e.message||'falha')+'</div>';
+  }
+}
+
 async function checkOpenTrades(){
   var now=Date.now();
   var open=signals.filter(function(s){
@@ -1951,16 +2014,17 @@ var tgSignalsOn=true; // Master toggle for Telegram signals
 var lastMarketState={}; // Cache for quick check comparison
 
 // ── INTERVALO DE SCAN (por plano) ──
+// v10.3 ALINHADO AO TF 8H — candle fecha a cada 8h, abaixo de 30min é desperdício.
 // Retorna intervalo mínimo (em horas) que o user pode escolher com o plano atual
 function getMinIntervalForUser(){
-  if(!curProfile)return 1;
+  if(!curProfile)return 2;
   var status=(curProfile.subscription_status||'').toString().trim().toLowerCase();
   var plan=(curProfile.plan_type||'').toString().trim().toLowerCase();
   if(status==='premium'){
-    if(plan.indexOf('anual')>-1||plan.indexOf('trimestr')>-1)return 0.25; // 15 min
-    return 0.5; // mensal (ou sem plan_type definido) = 30 min
+    if(plan.indexOf('anual')>-1||plan.indexOf('trimestr')>-1)return 0.5; // 30 min (trimestral/anual)
+    return 1; // mensal = 1h
   }
-  return 1; // trial / expired / qualquer outro = 1h mínimo
+  return 2; // trial / expired / qualquer outro = 2h mínimo
 }
 
 function getPlanLabel(){
@@ -2001,9 +2065,9 @@ function renderScanIntervalUI(){
   if(hintEl){
     // Debug inline: mostra exatamente o que o app está lendo do Supabase
     var debugInfo=' <span style="opacity:.5;font-size:8px">[status='+(curProfile.subscription_status||'null')+' plan='+(curProfile.plan_type||'null')+']</span>';
-    if(minH<=0.25)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: intervalos mínimos de 15 min disponíveis.'+debugInfo;
-    else if(minH<=0.5)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: intervalo mínimo 30 min. <span style="color:var(--acc);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Upgrade pra Anual</span> libera 15 min.'+debugInfo;
-    else hintEl.innerHTML='Plano <strong style="color:var(--amb)">TRIAL</strong>: intervalo mínimo 1h. <span style="color:var(--grn);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Assine</span> pra liberar 30 min ou 15 min.'+debugInfo;
+    if(minH<=0.5)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: mínimo 30 min (alinhado ao TF 8H).'+debugInfo;
+    else if(minH<=1)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: mínimo 1h. <span style="color:var(--acc);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Upgrade pra Trimestral/Anual</span> libera 30 min.'+debugInfo;
+    else hintEl.innerHTML='Plano <strong style="color:var(--amb)">TRIAL</strong>: mínimo 2h. <span style="color:var(--grn);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Assine</span> pra liberar 1h ou 30 min.'+debugInfo;
   }
 }
 
@@ -2040,12 +2104,39 @@ function setScanInterval(hours,btn){
 }
 
 function toggleAutoScan(btn){
-  autoScanOn=!autoScanOn;
+  var novoEstado=!autoScanOn;
+  // Optimistic UI: atualiza imediatamente
+  autoScanOn=novoEstado;
   btn.classList.toggle('on');
   if(autoScanOn){startAutoScan()}else{stopAutoScan()}
   if(curProfile)curProfile.auto_scan=autoScanOn;
-  if(sb&&curUser)sb.from('profiles').update({auto_scan:autoScanOn}).eq('id',curUser.id);
   localStorage.setItem(uKey('autoscan'),autoScanOn?'1':'0');
+  // ── FIX v10.2: trata erro do save e faz rollback ──
+  if(sb&&curUser){
+    sb.from('profiles').update({auto_scan:novoEstado}).eq('id',curUser.id).then(function(r){
+      if(r&&r.error){
+        console.error('[SPECTRA] Falha ao salvar auto_scan:',r.error);
+        // ROLLBACK visual
+        autoScanOn=!novoEstado;
+        btn.classList.toggle('on');
+        if(curProfile)curProfile.auto_scan=autoScanOn;
+        localStorage.setItem(uKey('autoscan'),autoScanOn?'1':'0');
+        if(autoScanOn){startAutoScan()}else{stopAutoScan()}
+        toast('Erro ao salvar: '+(r.error.message||'tente novamente'),'err');
+      }else{
+        toast(novoEstado?'Auto-scan ATIVADO — salvo na nuvem':'Auto-scan desativado','ok');
+      }
+    }).catch?.(function(e){
+      // Rede caiu
+      console.error('[SPECTRA] Sem internet ao salvar auto_scan:',e);
+      autoScanOn=!novoEstado;
+      btn.classList.toggle('on');
+      if(curProfile)curProfile.auto_scan=autoScanOn;
+      toast('Sem internet — não foi possível salvar','err');
+    });
+  }else{
+    toast('Faça login pra salvar a configuração','err');
+  }
 }
 
 function toggleTgSignals(btn){
@@ -2454,11 +2545,18 @@ function updateMotorStatus(){
   else{
     var nextMs,elapsedMs;
     if(lastScan>0){
+      // Caso normal: scan já rodou alguma vez, countdown baseado em last_scan_at
       nextMs=lastScan+scanIntMs;
       elapsedMs=now-lastScan;
     }else{
-      var minsNextCron=15-(new Date().getMinutes()%15);
-      nextMs=now+minsNextCron*60000;
+      // FIX v10.1: primeiro scan ainda não rodou. Em vez de sempre "now + Xmin"
+      // (que reinicia toda vez que abre o app), usa uma âncora estável baseada
+      // no relógio global de 15min (minuto 0, 15, 30, 45 UTC). Assim todos os
+      // devices mostram o mesmo countdown.
+      var nextCronMin=15-(new Date().getUTCMinutes()%15);
+      var secInCurMin=new Date().getUTCSeconds();
+      var msTillNextCron=(nextCronMin*60 - secInCurMin)*1000;
+      nextMs=now+msTillNextCron;
       elapsedMs=0;
     }
     var diffSec=Math.max(0,Math.round((nextMs-now)/1000));
@@ -2502,6 +2600,8 @@ function updateMotorStatus(){
 
 // ── REFETCH PROFILE ADAPTATIVO (global para ser acessível do motorTick) ──
 var _profileFastMode=false;
+var _lastScanStatus='idle';
+var _lastScanSigFound=0;
 async function _refetchProfile(){
   if(!curUser||!sb)return;
   try{
@@ -2519,7 +2619,35 @@ async function _refetchProfile(){
       }
       updateMotorStatus();
       try{renderScanIntervalUI();}catch(e){}
-      var scanning=curProfile.scan_status==='scanning'||curProfile.scan_status==='done';
+
+      // ── v10.3: NOTIFICAR operador sobre mudanças de estado do scan ──
+      var curStatus=curProfile.scan_status||'idle';
+      if(curStatus!==_lastScanStatus){
+        // idle → scanning: começou um scan novo
+        if(_lastScanStatus==='idle'&&curStatus==='scanning'){
+          var nPares=0;
+          try{var prog=JSON.parse(curProfile.scan_progress||'{}');nPares=prog.pairs_total||0;}catch(e){}
+          toast('🔍 Scan iniciado — analisando '+nPares+' pares','inf');
+          if(navigator.vibrate)navigator.vibrate(60);
+        }
+        // scanning → done: terminou o scan
+        if(_lastScanStatus==='scanning'&&curStatus==='done'){
+          var sigFound=0;
+          try{var prog2=JSON.parse(curProfile.scan_progress||'{}');sigFound=prog2.signals_found||0;}catch(e){}
+          if(sigFound>0){
+            toast('✅ Scan concluído — '+sigFound+' sinal'+(sigFound===1?'':'is')+' gerado'+(sigFound===1?'':'s'),'ok');
+            if(navigator.vibrate)navigator.vibrate([100,50,100]);
+            try{if(audioCtx){beep(660,.12);setTimeout(function(){beep(880,.15)},130);}}catch(e){}
+          }else{
+            toast('⌛ Scan concluído — nenhum setup operável no momento','inf');
+            if(navigator.vibrate)navigator.vibrate(80);
+          }
+          _lastScanSigFound=sigFound;
+        }
+        _lastScanStatus=curStatus;
+      }
+
+      var scanning=curStatus==='scanning'||curStatus==='done';
       if(scanning&&!_profileFastMode){
         _profileFastMode=true;
         if(window._profileIv)clearInterval(window._profileIv);
