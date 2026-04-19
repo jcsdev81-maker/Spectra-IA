@@ -1955,10 +1955,23 @@ function setScanInterval(hours,btn){
     toast('Intervalo bloqueado pelo seu plano — faça upgrade','inf');
     return;
   }
+  var prev=curProfile.scan_interval;
   curProfile.scan_interval=hours;
   // Salva no Supabase
   sb.from('profiles').update({scan_interval:hours}).eq('id',curUser.id).then(function(r){
-    if(r&&r.error){toast('Erro ao salvar: '+r.error.message,'err');return;}
+    if(r&&r.error){
+      // Rollback + erro legível
+      curProfile.scan_interval=prev;
+      renderScanIntervalUI();
+      var em=r.error.message||'erro desconhecido';
+      if(em.indexOf('integer')>-1||em.indexOf('22P02')>-1){
+        toast('Supabase precisa migração — rode 02_FIX_SCAN_INTERVAL_TYPE.sql','err');
+      }else{
+        toast('Erro ao salvar: '+em,'err');
+      }
+      console.error('[SPECTRA] setScanInterval erro:',r.error);
+      return;
+    }
     var label=hours<1?Math.round(hours*60)+' min':hours+'h';
     toast('Intervalo: '+label,'ok');
   });
@@ -2324,7 +2337,7 @@ function updateMotorStatus(){
   if(!lastEl||!nextEl)return;
 
   var autoScanOn=curProfile.auto_scan||false;
-  var scanIntHours=parseInt(curProfile.scan_interval)||4;
+  var scanIntHours=parseFloat(curProfile.scan_interval)||4;
   var scanIntMs=scanIntHours*3600000;
   var lastScan=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
   var now=Date.now();
@@ -2469,7 +2482,7 @@ function motorTick(){
     var autoScanOn=curProfile.auto_scan||false;
     if(autoScanOn&&scanStatus==='idle'){
       var lastScan=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
-      var scanIntMs=(parseInt(curProfile.scan_interval)||4)*3600000;
+      var scanIntMs=(parseFloat(curProfile.scan_interval)||4)*3600000;
       if(lastScan>0){
         var secToNext=Math.round(((lastScan+scanIntMs)-Date.now())/1000);
         if(secToNext<=30&&secToNext>-300&&window._profileIv&&!window._anticipating){
