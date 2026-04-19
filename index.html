@@ -562,7 +562,9 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 <div class="toast" id="toast"></div>
 <script>
 // ══════════════════════════════════════════════════════════
-// SPECTRA — Motor SPEC MIND v4 (Production + Auth)
+// SPECTRA — Motor SPEC MIND v10 (Production + Auth)
+// Auditoria 2026-04: 8H fixo (anti-ruído), VPFR real, DEMA multi-TF,
+// Worker como única fonte do auto-scan (scan_interval respeitado fielmente)
 // ══════════════════════════════════════════════════════════
 
 // ── PROTOCOL CHECK ──
@@ -949,6 +951,43 @@ function detectMACDFailure(macdLine,signal,lookback){
 }
 
 
+// ── VOLUME PROFILE (VPFR) — POC, VAH, VAL com Value Area 70% ──
+function calcVolumeProfile(highs,lows,volumes,bucketsN){
+  bucketsN=bucketsN||50;
+  var n=highs.length;
+  var minP=Math.min.apply(null,lows);
+  var maxP=Math.max.apply(null,highs);
+  if(!(maxP>minP))return{poc:minP,vah:minP,val:minP};
+  var step=(maxP-minP)/bucketsN;
+  var vp=new Array(bucketsN).fill(0);
+  for(var i=0;i<n;i++){
+    var lo=lows[i],hi=highs[i],vol=volumes[i]||0;
+    if(vol<=0)continue;
+    var bLo=Math.max(0,Math.floor((lo-minP)/step));
+    var bHi=Math.min(bucketsN-1,Math.floor((hi-minP)/step));
+    var span=Math.max(1,bHi-bLo+1);
+    var per=vol/span;
+    for(var b=bLo;b<=bHi;b++)vp[b]+=per;
+  }
+  // POC = bucket com maior volume
+  var pocIdx=0;
+  for(var b2=1;b2<bucketsN;b2++)if(vp[b2]>vp[pocIdx])pocIdx=b2;
+  var poc=minP+(pocIdx+0.5)*step;
+  // Value Area: expansão a partir do POC até acumular 70% do volume total
+  var totalVol=0;for(var b3=0;b3<bucketsN;b3++)totalVol+=vp[b3];
+  var target=totalVol*0.70;
+  var lo2=pocIdx,hi2=pocIdx,acc=vp[pocIdx];
+  while(acc<target&&(lo2>0||hi2<bucketsN-1)){
+    var vLo=lo2>0?vp[lo2-1]:-1;
+    var vHi=hi2<bucketsN-1?vp[hi2+1]:-1;
+    if(vHi>=vLo){hi2++;acc+=vp[hi2];}
+    else{lo2--;acc+=vp[lo2];}
+  }
+  var val=minP+lo2*step;
+  var vah=minP+(hi2+1)*step;
+  return{poc:poc,vah:vah,val:val};
+}
+
 // ── FETCH MARKET DATA (700 candles Binance) ──
 async function fetchMarketData(symbol,interval){
   var clean=symbol.replace(/^[A-Z]+:/,'');
@@ -1004,6 +1043,22 @@ async function fetchMarketData(symbol,interval){
   var demaStatus=p>dema72?'ACIMA DEMA72 (comprador)':'ABAIXO DEMA72 (vendedor)';
   var demaDist=((p-dema72)/p*100).toFixed(2);
 
+  // ═══ DEMA 72 DIÁRIA (confluência multi-TF) ═══
+  var dema72dArr=calcDEMA(cd,72);
+  var dema72d=dema72dArr[dema72dArr.length-1];
+  var demaStatusD=p>dema72d?'ACIMA DEMA72D (comprador macro)':'ABAIXO DEMA72D (vendedor macro)';
+
+  // ═══ VOLUME PROFILE (VPFR) — últimos 200 candles do TF operacional ═══
+  var vpN=Math.min(200,h.length);
+  var vpH=h.slice(-vpN),vpL=l.slice(-vpN),vpV=v.slice(-vpN);
+  var vpfr=calcVolumeProfile(vpH,vpL,vpV,50);
+  var poc=vpfr.poc,vah=vpfr.vah,val=vpfr.val;
+  // Status de localização do preço no VPFR
+  var vpStatus;
+  if(p>=val&&p<=vah)vpStatus='DENTRO da Value Area (preço equilibrado)';
+  else if(p>vah)vpStatus='ACIMA da VAH (zona de distribuição/ATENÇÃO)';
+  else vpStatus='ABAIXO da VAL (zona de acumulação)';
+
   // ═══ DOW (topos/fundos) ═══
   var sw=findSwings(h,l,5),rh=sw.h.slice(-3),rl=sw.l.slice(-3);
   var dow='INDEFINIDO';
@@ -1057,8 +1112,11 @@ async function fetchMarketData(symbol,interval){
     // FALHA DE CRUZAMENTO MACD (gatilho antecipado)
     macdFailD:macdFailD.type,macdFailDescD:macdFailD.desc,macdFailBarsD:macdFailD.barsAgo,macdFailZonaD:macdFailD.zona||'—',macdFailForcaD:macdFailD.forca||'—',
     macdFailTF:macdFailTF.type,macdFailDescTF:macdFailTF.desc,macdFailBarsTF:macdFailTF.barsAgo,macdFailZonaTF:macdFailTF.zona||'—',macdFailForcaTF:macdFailTF.forca||'—',
-    // DEMA 72
+    // DEMA 72 (8H + Diária)
     dema72:dema72.toFixed(dec),demaStatus:demaStatus,demaDist:demaDist,
+    dema72d:dema72d.toFixed(dec),demaStatusD:demaStatusD,
+    // VPFR (Volume Profile Fixed Range — últimos 200 candles)
+    poc:poc.toFixed(dec),vah:vah.toFixed(dec),val:val.toFixed(dec),vpStatus:vpStatus,
     // DOW
     dow:dow,highs:rh.map(function(s){return s.p.toFixed(dec)}),lows:rl.map(function(s){return s.p.toFixed(dec)}),
     // FIBONACCI (LOG)
@@ -1302,17 +1360,18 @@ async function buildMktStr(sym){
     lastGoldenZone={low:parseFloat(d.f786),high:parseFloat(d.f618)};
     lastGZstatus=d.gz||'NÃO';
     if(!d||!d.price)throw new Error('Sem dados da Binance para '+sym);
-  return sym+' 4H|Preço:'+d.price
+  return sym+' 8H|Preço:'+d.price
     +'|GATE D:'+d.macdGate+' Line='+d.macdLineD+' Sig='+d.signalLineD+' Hist='+d.histD+'('+d.histTrendD+') Cross:'+d.macdCrossD+' Zero:'+d.macdZeroD
     +'|★FalhaD:'+d.macdFailD+' '+d.macdFailDescD+' Zona:'+d.macdFailZonaD
-    +'|MACD 4H:'+d.macdTF+' Line='+d.macdLineTF+' Sig='+d.signalLineTF+' Hist='+d.histTF+'('+d.histTrendTF+') Cross:'+d.macdCrossTF
-    +'|★Falha4H:'+d.macdFailTF+' '+d.macdFailDescTF+' Zona:'+d.macdFailZonaTF
-    +'|DEMA72='+d.dema72+' '+d.demaStatus
+    +'|MACD 8H:'+d.macdTF+' Line='+d.macdLineTF+' Sig='+d.signalLineTF+' Hist='+d.histTF+'('+d.histTrendTF+') Cross:'+d.macdCrossTF
+    +'|★Falha8H:'+d.macdFailTF+' '+d.macdFailDescTF+' Zona:'+d.macdFailZonaTF
+    +'|DEMA72 8H='+d.dema72+' '+d.demaStatus+'|DEMA72 D='+d.dema72d+' '+d.demaStatusD
     +'|DOW:'+d.dow+' T:'+d.highs.join(',')+' F:'+d.lows.join(',')
     +'|FIBO LOG:'+d.fibH+'→'+d.fibL+' .382='+d.f382+' .5='+d.f500+' .618='+d.f618+' .786='+d.f786+' GZ:'+d.gz
     +'|EXT LOG: 100%='+d.e100+' 127.2%='+d.e1272+' 141.4%='+d.e1414+' 161.8%='+d.e1618+' 227%='+d.e2270
+    +'|VPFR: POC='+d.poc+' VAH='+d.vah+' VAL='+d.val+' '+d.vpStatus
     +'|VOL:'+d.volStatus+'|CANDLE:'+d.candle
-    +'|JSON obrigatório. Dados reais Binance.';
+    +'|Timeframe operacional 8H (filtro anti-ruído da estratégia). JSON obrigatório. Dados reais Binance.';
   }catch(e){console.error('[SPECTRA] buildMktStr erro:',e);throw new Error('Binance: '+e.message);}
 }
 
@@ -1343,8 +1402,8 @@ async function analisarUm(){
     if(sig){
       sig.id=genSigId();
       sig.time=new Date().toISOString();sig.status='open';
-      // Captura preço REAL no momento da criação
-      sig.priceAtCreation=lastGoldenZone?parseFloat(document.querySelector('#mTicker')?0:0):0;
+      // Captura preço REAL no momento da criação (via API Binance)
+      sig.priceAtCreation=0;
       try{var snap=await fetch('https://api.binance.com/api/v3/ticker/price?symbol='+pair);var sj=await snap.json();sig.priceAtCreation=parseFloat(sj.price)||0;}catch(e){}
 
       // ── FIX 1: GZ check SÓ para LONG (para SHORT, GZ=NÃO é esperado) ──
@@ -1999,11 +2058,12 @@ function toggleTgSignals(btn){
 function startAutoScan(){
   autoScanOn=true;
   var st=document.getElementById('autoStatus');
-  if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — check a cada 5min';
-  autoLog('Auto-scan ativado — check rápido a cada 5min');
-  // Run quick check immediately, then every 5 min
-  quickCheck();
-  autoScanTimer=setInterval(quickCheck,5*60*1000);
+  var intH=parseFloat(curProfile&&curProfile.scan_interval)||4;
+  var intLbl=intH<1?Math.round(intH*60)+' min':intH+'h';
+  if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — Worker scaneia a cada '+intLbl;
+  autoLog('Auto-scan ativado — Worker respeita intervalo do plano ('+intLbl+')');
+  // Motor autoritativo = Worker (Cloudflare). Frontend apenas observa scan_status/progress
+  // via _refetchProfile. Não roda timer local pra evitar duplicação e respeitar scan_interval.
 }
 
 function stopAutoScan(){
@@ -2014,73 +2074,62 @@ function stopAutoScan(){
   autoLog('Auto-scan desativado');
 }
 
-// ═══ STAGE 1: QUICK CHECK (só Binance, sem IA) ═══
-async function quickCheck(){
-  if(isAnalyzing)return;
-  var changed=[];
-  try{
-    var symbols=monitored.map(function(p){return'"'+p+'"'}).join(',');
-    var r=await fetch('https://api.binance.com/api/v3/ticker/price?symbols=['+symbols+']');
-    var prices=await r.json();
-    prices.forEach(function(t){
-      var sym=t.symbol,price=parseFloat(t.price);
-      var prev=lastMarketState[sym];
-      if(!prev){lastMarketState[sym]={price:price,time:Date.now()};return;}
-      // Detect significant change: >1.5% move since last check
-      var pctChange=Math.abs((price-prev.price)/prev.price*100);
-      if(pctChange>=1.5){
-        changed.push(sym);
-        lastMarketState[sym]={price:price,time:Date.now()};
-      }
-    });
-  }catch(e){autoLog('Check falhou: '+e.message);return;}
+// ═══ FORÇA SCAN MANUAL (fallback) — analisa TODOS os pares monitorados agora ═══
+// Opcional: chamar via botão "SCAN AGORA" se quiser permitir override manual.
+// NÃO é o auto-scan periódico — aquele é do Worker.
+async function forceScanNow(){
+  if(isAnalyzing||isScanning){toast('Análise em andamento','inf');return;}
+  await runFullScan(monitored);
+}
 
-  if(changed.length>0){
-    autoLog('Mudança detectada: '+changed.map(function(s){return s.replace('USDT','')}).join(', '));
-    await runFullScan(changed);
-  }else{
-    var st=document.getElementById('autoStatus');
-    if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — último check: '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  }
+// ═══ QUICK CHECK (legado — mantido só pra uso manual via forceScanNow) ═══
+async function quickCheck(){
+  // Desativado como timer automático. Worker é a única fonte.
+  return;
 }
 
 // ═══ STAGE 2: FULL SCAN (Gemini IA, só pares com mudança) ═══
 async function runFullScan(pairsToScan){
-  if(isAnalyzing)return;
-  var pairs=pairsToScan||monitored;
-  autoLog('Análise IA: '+pairs.length+' par(es)');
-  var found=0;
-  for(var i=0;i<pairs.length;i++){
-    var pair=pairs[i];
-    var existing=signals.find(function(s){return(s.par===pair||s.par===pair.replace('USDT','/USDT'))&&(!s.status||s.status==='open')});
-    if(existing){autoLog('⏭ '+pair.replace('USDT','')+' — sinal aberto');continue;}
-    autoLog((i+1)+'/'+pairs.length+' '+pair.replace('USDT','')+'...');
-    try{
-      var mkt=await buildMktStr(pair);
-      var text=await callGemini(SYSTEM_PROMPT,mkt,!tgSignalsOn);
-      var raw=exJSON(text);
-      var sig=mapSignal(raw,pair);
-      if(sig){
-        sig.id=genSigId();
-        sig.time=new Date().toISOString();
-        sig.status='open';
-        var dir=(sig.direcao||'').toUpperCase();
-        if(dir==='LONG'||dir==='SHORT'){
-          signals.unshift(sig);signals=signals.slice(0,100);saveSigsNow();
-          found++;
-          alertBeep(sig);
-          autoLog('✅ '+pair.replace('USDT','')+' → '+dir+' R:R '+(sig.rr||'—'));
-        }else{
-          signals.unshift(sig);signals=signals.slice(0,100);saveSigsNow();
-          autoLog('◆ '+pair.replace('USDT','')+' → AGUARDAR');
+  if(isAnalyzing||isScanning)return;
+  isAnalyzing=true;
+  try{
+    var pairs=pairsToScan||monitored;
+    autoLog('Análise IA: '+pairs.length+' par(es) @ 8H');
+    var found=0;
+    for(var i=0;i<pairs.length;i++){
+      var pair=pairs[i];
+      var existing=signals.find(function(s){return(s.par===pair||s.par===pair.replace('USDT','/USDT'))&&(!s.status||s.status==='open')});
+      if(existing){autoLog('⏭ '+pair.replace('USDT','')+' — sinal aberto');continue;}
+      autoLog((i+1)+'/'+pairs.length+' '+pair.replace('USDT','')+'...');
+      try{
+        var mkt=await buildMktStr(pair);
+        var text=await callGemini(SYSTEM_PROMPT,mkt,!tgSignalsOn);
+        var raw=exJSON(text);
+        var sig=mapSignal(raw,pair);
+        if(sig){
+          sig.id=genSigId();
+          sig.time=new Date().toISOString();
+          sig.status='open';
+          var dir=(sig.direcao||'').toUpperCase();
+          if(dir==='LONG'||dir==='SHORT'){
+            signals.unshift(sig);signals=signals.slice(0,100);saveSigsNow();
+            found++;
+            alertBeep(sig);
+            autoLog('✅ '+pair.replace('USDT','')+' → '+dir+' R:R '+(sig.rr||'—'));
+          }else{
+            signals.unshift(sig);signals=signals.slice(0,100);saveSigsNow();
+            autoLog('◆ '+pair.replace('USDT','')+' → AGUARDAR');
+          }
         }
-      }
-    }catch(e){autoLog('❌ '+pair.replace('USDT','')+': '+e.message);}
-    if(i<pairs.length-1)await new Promise(function(ok){setTimeout(ok,4000)});
+      }catch(e){autoLog('❌ '+pair.replace('USDT','')+': '+e.message);}
+      if(i<pairs.length-1)await new Promise(function(ok){setTimeout(ok,4000)});
+    }
+    renderSignals();updateDash();
+    if(found>0)toast(found+' sinais encontrados','ok');
+    autoLog('Completo — '+found+' operáveis');
+  }finally{
+    isAnalyzing=false;
   }
-  renderSignals();updateDash();
-  if(found>0)toast(found+' sinais encontrados','ok');
-  autoLog('Completo — '+found+' operáveis');
 }
 
 function autoLog(msg){
@@ -2397,7 +2446,7 @@ function updateMotorStatus(){
     nextEl.style.fontSize='13px';
     if(dotEl){dotEl.style.background='var(--grn)';dotEl.style.boxShadow='0 0 12px var(--grn)';}
     if(titleEl)titleEl.textContent='SPEC MIND · SCAN CONCLUÍDO';
-    if(badgeEl){badgeEl.textContent=scanIntHours+'h';badgeEl.style.color='var(--grn)';badgeEl.style.borderColor='var(--grn)';badgeEl.style.background='var(--grnd)';}
+    if(badgeEl){badgeEl.textContent=scanIntHours<1?Math.round(scanIntHours*60)+'m':scanIntHours+'h';badgeEl.style.color='var(--grn)';badgeEl.style.borderColor='var(--grn)';badgeEl.style.background='var(--grnd)';}
     if(progEl)progEl.style.width='100%';
     renderMotorPairs('done',scanProgress);
   }
@@ -2415,18 +2464,33 @@ function updateMotorStatus(){
     var diffSec=Math.max(0,Math.round((nextMs-now)/1000));
     var pct=Math.min(100,Math.max(0,(elapsedMs/scanIntMs)*100));
 
-    if(diffSec<=0){
+    // ── DETECÇÃO DE WORKER SILENCIOSO ──
+    // Se passou > 2x o intervalo sem scan, o Worker provavelmente travou
+    var workerStalled=lastScan>0&&elapsedMs>(scanIntMs*2);
+    if(workerStalled){
+      var overdueMins=Math.round((elapsedMs-scanIntMs)/60000);
+      nextEl.innerHTML='<span style="color:var(--amb)">⚠ atrasado '+overdueMins+'min</span>';
+      nextEl.style.fontSize='13px';
+      if(dotEl){dotEl.style.background='var(--amb)';dotEl.style.boxShadow='0 0 10px var(--amb)';}
+      if(titleEl)titleEl.textContent='SPEC MIND · AGUARDANDO WORKER';
+      if(badgeEl){badgeEl.textContent='LENTO';badgeEl.style.color='var(--amb)';badgeEl.style.borderColor='var(--amb)';badgeEl.style.background='var(--ambd)';}
+      if(progEl)progEl.style.width='100%';
+    }else if(diffSec<=0){
       nextEl.innerHTML='<span style="color:var(--acc)">iniciando em breve</span>';
       nextEl.style.fontSize='13px';
+      if(dotEl){dotEl.style.background='var(--grn)';dotEl.style.boxShadow='0 0 10px var(--grn)';}
+      if(titleEl)titleEl.textContent='SPEC MIND · ATIVO';
+      if(badgeEl){badgeEl.textContent=scanIntHours<1?Math.round(scanIntHours*60)+'m':scanIntHours+'h';badgeEl.style.color='var(--grn)';badgeEl.style.borderColor='var(--grn)';badgeEl.style.background='var(--grnd)';}
+      if(progEl)progEl.style.width=pct.toFixed(1)+'%';
     }else{
       nextEl.textContent=fmtCountdown(diffSec);
       nextEl.style.fontSize='18px';
       nextEl.style.color='var(--acc)';
+      if(dotEl){dotEl.style.background='var(--grn)';dotEl.style.boxShadow='0 0 10px var(--grn)';}
+      if(titleEl)titleEl.textContent='SPEC MIND · ATIVO';
+      if(badgeEl){badgeEl.textContent=scanIntHours<1?Math.round(scanIntHours*60)+'m':scanIntHours+'h';badgeEl.style.color='var(--grn)';badgeEl.style.borderColor='var(--grn)';badgeEl.style.background='var(--grnd)';}
+      if(progEl)progEl.style.width=pct.toFixed(1)+'%';
     }
-    if(dotEl){dotEl.style.background='var(--grn)';dotEl.style.boxShadow='0 0 10px var(--grn)';}
-    if(titleEl)titleEl.textContent='SPEC MIND · ATIVO';
-    if(badgeEl){badgeEl.textContent=scanIntHours+'h';badgeEl.style.color='var(--grn)';badgeEl.style.borderColor='var(--grn)';badgeEl.style.background='var(--grnd)';}
-    if(progEl)progEl.style.width=pct.toFixed(1)+'%';
     renderMotorPairs('waiting',null);
   }
 
