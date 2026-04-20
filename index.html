@@ -151,7 +151,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
       </div>
       <div class="auth-msg" id="authMsg"></div>
     </div>
-    <div style="text-align:center;margin-top:16px;font-family:var(--f2);font-size:11px;color:var(--t3)">7 dias grátis • Sem cartão • Cancele quando quiser</div>
+    <div style="text-align:center;margin-top:16px;font-family:var(--f2);font-size:11px;color:var(--t3)">3 dias grátis • Sem cartão • Cancele quando quiser</div>
   </div>
 </div>
 
@@ -159,7 +159,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 <div class="exp-scr" id="expScr">
   <div style="font-size:48px;margin-bottom:12px">⏰</div>
   <div style="font-size:22px;font-weight:800;color:var(--red);letter-spacing:2px;margin-bottom:10px">PERÍODO ENCERRADO</div>
-  <div style="font-family:var(--f2);font-size:12px;color:var(--t2);text-align:center;max-width:340px;line-height:1.7;margin-bottom:6px">Seu teste gratuito terminou. Assine para continuar recebendo sinais.</div>
+  <div style="font-family:var(--f2);font-size:12px;color:var(--t2);text-align:center;max-width:340px;line-height:1.7;margin-bottom:6px">Seu teste gratuito de 3 dias terminou. Assine para continuar recebendo sinais.</div>
   <div id="expInfo" style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-bottom:20px"></div>
   <div style="background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:18px;width:100%;max-width:340px;margin-bottom:14px">
     <div style="font-family:var(--f2);font-size:10px;color:var(--acc);letter-spacing:2px;text-align:center;margin-bottom:10px">PLANOS</div>
@@ -211,7 +211,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
       </div>
     </div>
     <div style="background:var(--grnd);border:1px solid var(--grn);border-radius:8px;padding:10px;margin-top:14px;text-align:center">
-      <div style="font-family:var(--f2);font-size:10px;color:var(--grn);letter-spacing:1px">✓ Você tem <strong id="obTrialDays">7 dias</strong> de acesso grátis</div>
+      <div style="font-family:var(--f2);font-size:10px;color:var(--grn);letter-spacing:1px">✓ Você tem <strong id="obTrialDays">3 dias</strong> de acesso grátis</div>
     </div>
     <button onclick="closeOnboarding()" style="width:100%;padding:13px;background:var(--grd);border:none;border-radius:10px;color:#000;font-family:var(--f1);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;margin-top:14px">ENTENDI · COMEÇAR</button>
   </div>
@@ -221,13 +221,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 <div class="shell" id="shell" style="display:none">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:10px"><h1>SPECTRA</h1><span id="planBadge" style="font-family:var(--f2);font-size:10px;color:var(--acc);padding:2px 6px;background:var(--accd);border:1px solid var(--acc);border-radius:3px">SPEC MIND</span></div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span id="scanStatusPill" onclick="goPage('alert',document.querySelector('.nav-item:nth-child(4)'))" style="display:flex;align-items:center;gap:5px;font-family:var(--f2);font-size:10px;padding:4px 10px;border-radius:12px;cursor:pointer;background:var(--bg);border:1px solid var(--t3);color:var(--t3);transition:all .2s" title="Clique para configurar">
-        <span id="scanStatusDot" style="width:6px;height:6px;border-radius:50%;background:var(--t3);display:inline-block"></span>
-        <span id="scanStatusTxt">AUTO-SCAN</span>
-      </span>
-      <div class="topbar-r" id="topInfo">7 Pilares • IA</div>
-    </div>
+    <div class="topbar-r" id="topInfo">7 Pilares • IA</div>
   </div>
   <div class="content">
     <!-- DASHBOARD PRO -->
@@ -440,6 +434,19 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
       <div class="sec" style="margin-top:16px">🔍 HISTÓRICO DE SCANS <span style="color:var(--t3);font-family:var(--f2);font-size:10px;margin-left:6px">(últimos 20)</span></div>
       <div id="scanHistoryList"><div class="empty" style="padding:20px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Aguardando primeiros ciclos de scan...</div></div></div>
       <button onclick="loadScanHistory()" style="width:100%;margin-top:8px;padding:10px;background:transparent;border:1px solid var(--brd);border-radius:8px;color:var(--t2);font-family:var(--f2);font-size:11px;cursor:pointer">🔄 ATUALIZAR HISTÓRICO</button>
+
+      <!-- v13: LOG DE ANÁLISES IA — prova que a SPEC MIND trabalhou em cada par -->
+      <div class="sec" style="margin-top:20px">🧠 ANÁLISES IA <span style="color:var(--t3);font-family:var(--f2);font-size:10px;margin-left:6px">(pares analisados hoje)</span></div>
+      <div id="analiseAguardarSummary" style="background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:12px;margin-bottom:8px;display:none">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
+          <div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);letter-spacing:1px">ANALISADOS</div><div id="anTotal" style="font-size:20px;font-weight:700;color:var(--acc)">0</div></div>
+          <div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);letter-spacing:1px">FORÇA MÉDIA</div><div id="anForca" style="font-size:20px;font-weight:700;color:var(--amb)">0%</div></div>
+          <div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);letter-spacing:1px">EM ZONA</div><div id="anZona" style="font-size:20px;font-weight:700;color:var(--grn)">0</div></div>
+          <div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);letter-spacing:1px">EM GATILHO</div><div id="anGatilho" style="font-size:20px;font-weight:700;color:var(--grn)">0</div></div>
+        </div>
+      </div>
+      <div id="analiseAguardarList"><div class="empty" style="padding:16px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Aguardando análises...</div></div></div>
+      <button onclick="loadAnaliseAguardar()" style="width:100%;margin-top:8px;padding:10px;background:transparent;border:1px solid var(--brd);border-radius:8px;color:var(--t2);font-family:var(--f2);font-size:11px;cursor:pointer">🔄 ATUALIZAR ANÁLISES</button>
     </div>
     <!-- ALERTAS -->
     <div class="page" id="pg-alert">
@@ -662,7 +669,7 @@ async function checkAccess(){
   if(curProfile.subscription_status==='premium'){showApp();return;}
   // Null-safe trial dates
   var trialStart=curProfile.trial_start||curProfile.created_at||new Date().toISOString();
-  var trialDays=parseInt(curProfile.trial_days)||7;
+  var trialDays=parseInt(curProfile.trial_days)||3;
   var start=new Date(trialStart);
   if(isNaN(start.getTime())){start=new Date();} // fallback se data inválida
   var end=new Date(start.getTime()+trialDays*86400000);
@@ -679,7 +686,7 @@ function showApp(){
   if(curProfile){
     var isPrem=curProfile.subscription_status==='premium';
     var trialStart=curProfile.trial_start||curProfile.created_at||new Date().toISOString();
-    var trialDays=parseInt(curProfile.trial_days)||7;
+    var trialDays=parseInt(curProfile.trial_days)||3;
     var tStart=new Date(trialStart);if(isNaN(tStart.getTime()))tStart=new Date();
     var endMs=tStart.getTime()+trialDays*86400000;
     var daysLeft=Math.max(0,Math.ceil((endMs-Date.now())/86400000));
@@ -1231,7 +1238,7 @@ async function loadBinancePairs(){
 }
 
 // ── NAVIGATION ──
-function goPage(id,btn){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on')});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('pg-'+id).classList.add('on');btn.classList.add('on');if(id==='sig')popPairSel();if(id==='res'){renderPerf();try{loadScanHistory();}catch(e){}}if(id==='alert')filterPairs();}
+function goPage(id,btn){document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on')});document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('on')});document.getElementById('pg-'+id).classList.add('on');btn.classList.add('on');if(id==='sig')popPairSel();if(id==='res'){renderPerf();try{loadScanHistory();}catch(e){}try{loadAnaliseAguardar();}catch(e){}}if(id==='alert')filterPairs();}
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast on '+(t||'ok');setTimeout(function(){el.classList.remove('on')},4000);}
 function popPairSel(){filterSigPairs();}
 function filterSigPairs(){
@@ -1623,31 +1630,7 @@ function updateDash(){
 
 function renderStrongestSignal(s){
   var el=document.getElementById('dashStrongest');
-  if(!s){
-    // Contexto: tem pares monitorados? auto-scan ativo?
-    var hasPairs=Array.isArray(monitored)&&monitored.length>0;
-    var scanOn=curProfile&&curProfile.auto_scan;
-    var lastScan=curProfile&&curProfile.last_scan_at;
-    var h='<div style="background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:18px;text-align:center">';
-    if(!hasPairs){
-      // Só AQUI mostra CTA grande (é o único bloqueio real: sem pares = sem análise)
-      h+='<div style="font-size:32px;margin-bottom:8px;opacity:.7">🎯</div>';
-      h+='<div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:6px">Primeiro passo</div>';
-      h+='<div style="font-family:var(--f2);font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:12px">Escolha os pares crypto que você quer que o SPEC MIND monitore.<br>A IA vai analisar cada um usando os 7 pilares.</div>';
-      h+='<button onclick="goPage(\'alert\',document.querySelector(\'.nav-item:nth-child(4)\'))" style="padding:10px 20px;background:var(--grd);border:none;border-radius:8px;color:#000;font-family:var(--f1);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer">🔔 ESCOLHER PARES</button>';
-    }else{
-      // Tem pares — mensagem discreta e educativa (o status real do scan fica no pill do topo)
-      h+='<div style="font-size:28px;margin-bottom:6px;opacity:.5">📡</div>';
-      h+='<div style="font-family:var(--f2);font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:8px">Nenhum setup de alta confluência no momento.</div>';
-      h+='<div style="font-family:var(--f2);font-size:10px;color:var(--t3);background:var(--bg);padding:10px;border-radius:6px;text-align:left;line-height:1.6"><strong style="color:var(--grn)">💡 O SPEC MIND só gera sinal quando:</strong><br>• ≥3 pilares confluem na direção<br>• R:R ≥ 3:1 garantido<br>• Preço na Golden Zone (LONG) ou validação SHORT</div>';
-      if(!scanOn){
-        h+='<div style="font-family:var(--f2);font-size:10px;color:var(--amb);margin-top:8px">Auto-scan desativado — <span style="color:var(--acc);cursor:pointer;text-decoration:underline" onclick="goPage(\'alert\',document.querySelector(\'.nav-item:nth-child(4)\'))">ativar</span></div>';
-      }
-    }
-    h+='</div>';
-    el.innerHTML=h;
-    return;
-  }
+  if(!s){el.innerHTML='<div class="empty" style="padding:18px"><div class="empty-icon">📡</div><div class="empty-text">Nenhum sinal ativo.<br>Vá em <strong>Sinais</strong> para analisar.</div></div>';return;}
   var dir=(s.direcao||'').toUpperCase();
   var dirBg=dir==='LONG'?'var(--grn)':dir==='SHORT'?'var(--red)':'var(--amb)';
   var dirBgD=dir==='LONG'?'var(--grnd)':dir==='SHORT'?'var(--redd)':'var(--ambd)';
@@ -1750,18 +1733,12 @@ async function loadScanHistory(){
   try{
     var r=await sb.from('scan_history').select('started_at,finished_at,pairs_scanned,signals_found,aguardar_count,error_count,duration_seconds,pairs_detail').eq('user_id',curUser.id).order('started_at',{ascending:false}).limit(20);
     if(r.error){
-      // Tabela ainda não existe (SQL 04 não rodou) — mostra estado amigável, não erro vermelho
-      var msg=(r.error.message||'').toLowerCase();
-      if(msg.indexOf('scan_history')>-1||msg.indexOf('relation')>-1||msg.indexOf('does not exist')>-1||r.error.code==='42P01'){
-        el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-icon">📊</div><div class="empty-text" style="font-size:12px;color:var(--t2);line-height:1.6">Histórico de scans ainda não disponível.<br><span style="color:var(--t3);font-size:10px">Os resultados de cada ciclo aparecerão aqui após o próximo scan.</span></div></div>';
-      }else{
-        el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Não foi possível carregar o histórico agora. Tente novamente em instantes.</div></div>';
-      }
+      el.innerHTML='<div style="text-align:center;padding:14px;color:var(--red);font-family:var(--f2);font-size:11px">Erro: '+(r.error.message||'falha ao carregar')+'</div>';
       return;
     }
     var rows=r.data||[];
     if(!rows.length){
-      el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-icon">⏳</div><div class="empty-text" style="font-size:12px;color:var(--t2);line-height:1.6">Nenhum scan registrado ainda.<br><span style="color:var(--t3);font-size:10px">Aguarde o próximo ciclo do SPEC MIND.</span></div></div>';
+      el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Nenhum scan registrado ainda. Aguarde o próximo ciclo.</div></div>';
       return;
     }
     var html='';
@@ -1798,8 +1775,92 @@ async function loadScanHistory(){
     });
     el.innerHTML=html;
   }catch(e){
-    // Falha de rede ou similar — mensagem amigável, não erro técnico
-    el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Não foi possível carregar o histórico agora.<br><span style="font-size:10px">Tente puxar a tela pra atualizar.</span></div></div>';
+    el.innerHTML='<div style="text-align:center;padding:14px;color:var(--red);font-family:var(--f2);font-size:11px">Erro: '+(e.message||'falha')+'</div>';
+  }
+}
+
+// v13: Carrega log de análises IA (AGUARDAR) — prova que SPEC MIND trabalhou
+async function loadAnaliseAguardar(){
+  if(!sb||!curUser)return;
+  var el=document.getElementById('analiseAguardarList');
+  var sumEl=document.getElementById('analiseAguardarSummary');
+  if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:14px;color:var(--t3);font-family:var(--f2);font-size:11px"><span class="ld" style="vertical-align:middle;margin-right:6px"></span>Carregando análises...</div>';
+  try{
+    var today=new Date();today.setHours(0,0,0,0);
+    var r=await sb.from('analise_aguardar').select('pair,price,forca,estrelas,fase,motivo,pilares,created_at').eq('user_id',curUser.id).gte('created_at',today.toISOString()).order('created_at',{ascending:false}).limit(50);
+    if(r.error){
+      var msg=(r.error.message||'').toLowerCase();
+      if(msg.indexOf('analise_aguardar')>-1||msg.indexOf('relation')>-1||msg.indexOf('does not exist')>-1){
+        el.innerHTML='<div class="empty" style="padding:16px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Log de análises ainda não disponível.<br><span style="font-size:10px">Será criado no próximo scan da IA.</span></div></div>';
+      }else{
+        el.innerHTML='<div class="empty" style="padding:16px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Não foi possível carregar agora.</div></div>';
+      }
+      if(sumEl)sumEl.style.display='none';
+      return;
+    }
+    var rows=r.data||[];
+    if(!rows.length){
+      el.innerHTML='<div class="empty" style="padding:16px"><div class="empty-icon">🧠</div><div class="empty-text" style="font-size:11px;color:var(--t3)">Nenhuma análise hoje ainda.<br><span style="font-size:10px">Aguarde o próximo ciclo do auto-scan.</span></div></div>';
+      if(sumEl)sumEl.style.display='none';
+      return;
+    }
+
+    // Summary
+    if(sumEl){
+      sumEl.style.display='block';
+      var forcaMedia=Math.round(rows.reduce(function(s,r){return s+(r.forca||0)},0)/rows.length);
+      var zonaCount=rows.filter(function(r){return (r.fase||'').indexOf('ZONA DE VALOR')>-1}).length;
+      var gatilhoCount=rows.filter(function(r){return (r.fase||'').indexOf('GATILHO')>-1}).length;
+      document.getElementById('anTotal').textContent=rows.length;
+      document.getElementById('anForca').textContent=forcaMedia+'%';
+      document.getElementById('anZona').textContent=zonaCount;
+      document.getElementById('anGatilho').textContent=gatilhoCount;
+    }
+
+    var html='';
+    rows.forEach(function(a){
+      var dt=new Date(a.created_at);
+      var timeStr=dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      var pairName=(a.pair||'').replace('USDT','');
+      var forca=a.forca||0;
+      var forcaCol=forca>=70?'var(--grn)':forca>=40?'var(--amb)':'var(--t3)';
+      var fase=a.fase||'—';
+      var faseIcon=fase.indexOf('EXECUÇÃO')>-1?'🎯':fase.indexOf('GATILHO')>-1?'⚡':fase.indexOf('ZONA')>-1?'📍':'🔍';
+      var pilares=null;
+      try{pilares=typeof a.pilares==='string'?JSON.parse(a.pilares):a.pilares;}catch(e){}
+      var pillarBadges='';
+      if(pilares){
+        var pNames={elliott:'EW',fibonacci:'FIB',macd_12_72:'MACD',dow:'DOW',wyckoff:'WY',gann:'GANN',price_action:'PA'};
+        Object.keys(pNames).forEach(function(k){
+          if(pilares[k]){
+            var p=pilares[k];
+            var sc=p.score||0;
+            var dir=(p.direcao||'').toUpperCase();
+            var col=sc>=70?'var(--grn)':sc>=40?'var(--amb)':'var(--t3)';
+            var ic=dir.indexOf('COMPRA')>-1?'▲':dir.indexOf('VENDA')>-1?'▼':'·';
+            pillarBadges+='<span style="font-family:var(--f2);font-size:9px;padding:2px 5px;background:var(--bg);border:1px solid '+col+'55;color:'+col+';border-radius:3px;display:inline-block;margin:2px">'+ic+' '+pNames[k]+' '+sc+'</span>';
+          }
+        });
+      }
+
+      html+='<div style="background:var(--bg2);border:1px solid var(--brd);border-left:3px solid '+forcaCol+';border-radius:8px;padding:10px 12px;margin-bottom:6px">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+      html+='<div style="display:flex;align-items:center;gap:8px"><span style="font-family:var(--f2);font-size:13px;font-weight:700">'+pairName+'</span><span style="font-family:var(--f2);font-size:10px;color:var(--t3)">$'+(a.price||0).toLocaleString('en-US',{maximumFractionDigits:6})+'</span></div>';
+      html+='<div style="display:flex;align-items:center;gap:6px"><span style="font-family:var(--f2);font-size:11px;color:'+forcaCol+';font-weight:600">'+forca+'%</span><span style="font-family:var(--f2);font-size:10px;color:var(--t3)">'+timeStr+'</span></div>';
+      html+='</div>';
+      html+='<div style="font-family:var(--f2);font-size:10px;color:var(--t2);margin-bottom:6px">'+faseIcon+' <strong>'+fase+'</strong> · '+(a.estrelas||'')+'</div>';
+      if(pillarBadges)html+='<div style="margin-bottom:6px">'+pillarBadges+'</div>';
+      if(a.motivo){
+        var narr=a.motivo.length>140?a.motivo.substring(0,140)+'...':a.motivo;
+        html+='<div style="font-size:10px;color:var(--t3);line-height:1.4;font-style:italic">💡 '+narr+'</div>';
+      }
+      html+='</div>';
+    });
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<div class="empty" style="padding:16px"><div class="empty-text" style="font-size:11px;color:var(--t3)">Não foi possível carregar agora.</div></div>';
+    if(sumEl)sumEl.style.display='none';
   }
 }
 
@@ -2054,14 +2115,14 @@ var lastMarketState={}; // Cache for quick check comparison
 // v10.3 ALINHADO AO TF 8H — candle fecha a cada 8h, abaixo de 30min é desperdício.
 // Retorna intervalo mínimo (em horas) que o user pode escolher com o plano atual
 function getMinIntervalForUser(){
-  if(!curProfile)return 1;
+  if(!curProfile)return 2;
   var status=(curProfile.subscription_status||'').toString().trim().toLowerCase();
   var plan=(curProfile.plan_type||'').toString().trim().toLowerCase();
   if(status==='premium'){
     if(plan.indexOf('anual')>-1||plan.indexOf('trimestr')>-1)return 0.5; // 30 min (trimestral/anual)
     return 1; // mensal = 1h
   }
-  return 1; // trial = 1h (aumenta chance de ver sinal no período de teste)
+  return 2; // trial / expired / qualquer outro = 2h mínimo
 }
 
 function getPlanLabel(){
@@ -2100,15 +2161,11 @@ function renderScanIntervalUI(){
     if(Math.abs(bInt-curH)<0.01){b.classList.add('active');}
   });
   if(hintEl){
-    // Diferencia TRIAL e MENSAL (ambos min 1h) pela subscription_status real
-    var isPrem=(curProfile.subscription_status||'').toString().trim().toLowerCase()==='premium';
-    if(minH<=0.5){
-      hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: mínimo 30 min (alinhado ao TF 8H).';
-    }else if(isPrem){
-      hintEl.innerHTML='Plano <strong style="color:var(--grn)">MENSAL</strong>: mínimo 1h. <span style="color:var(--acc);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Upgrade pra Trimestral/Anual</span> libera 30 min.';
-    }else{
-      hintEl.innerHTML='Plano <strong style="color:var(--amb)">TRIAL</strong>: mínimo 1h (mesmo do mensal). <span style="color:var(--grn);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Assine Trimestral/Anual</span> pra liberar 30 min.';
-    }
+    // Debug inline: mostra exatamente o que o app está lendo do Supabase
+    var debugInfo=' <span style="opacity:.5;font-size:8px">[status='+(curProfile.subscription_status||'null')+' plan='+(curProfile.plan_type||'null')+']</span>';
+    if(minH<=0.5)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: mínimo 30 min (alinhado ao TF 8H).'+debugInfo;
+    else if(minH<=1)hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: mínimo 1h. <span style="color:var(--acc);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Upgrade pra Trimestral/Anual</span> libera 30 min.'+debugInfo;
+    else hintEl.innerHTML='Plano <strong style="color:var(--amb)">TRIAL</strong>: mínimo 2h. <span style="color:var(--grn);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Assine</span> pra liberar 1h ou 30 min.'+debugInfo;
   }
 }
 
@@ -2144,50 +2201,6 @@ function setScanInterval(hours,btn){
   try{updateMotorStatus();}catch(e){}
 }
 
-// ── STATUS PILL do topo: reflete auto-scan em tempo real ──
-function updateScanStatusPill(){
-  var pill=document.getElementById('scanStatusPill');
-  var dot=document.getElementById('scanStatusDot');
-  var txt=document.getElementById('scanStatusTxt');
-  if(!pill||!dot||!txt)return;
-  // Múltiplas fontes — se Supabase disser off mas temos sinais recentes, é on
-  var autoScanSupabase=curProfile&&curProfile.auto_scan===true;
-  var autoScanLocal=(typeof autoScanOn!=='undefined'&&autoScanOn===true);
-  var autoScanLS=localStorage.getItem(uKey('autoscan'))==='1';
-  var hasRecentSignal=signals&&signals.some(function(s){
-    if(!s||!s.time)return false;
-    return (Date.now()-new Date(s.time).getTime())<(3*3600000);
-  });
-  var scanOn=autoScanSupabase||autoScanLocal||autoScanLS||hasRecentSignal;
-  var scanStatus=curProfile&&curProfile.scan_status;
-  if(scanStatus==='scanning'){
-    // Scan rodando AGORA
-    dot.style.background='var(--acc)';
-    dot.style.boxShadow='0 0 6px var(--acc)';
-    dot.style.animation='pulseDot 1s infinite';
-    txt.textContent='SCAN LIVE';
-    pill.style.borderColor='var(--acc)';
-    pill.style.color='var(--acc)';
-    pill.style.background='var(--accd)';
-  }else if(scanOn){
-    dot.style.background='var(--grn)';
-    dot.style.boxShadow='0 0 4px var(--grn)';
-    dot.style.animation='pulseDot 2s infinite';
-    txt.textContent='ATIVO';
-    pill.style.borderColor='var(--grn)';
-    pill.style.color='var(--grn)';
-    pill.style.background='var(--grnd)';
-  }else{
-    dot.style.background='var(--t3)';
-    dot.style.boxShadow='none';
-    dot.style.animation='none';
-    txt.textContent='OFF';
-    pill.style.borderColor='var(--t3)';
-    pill.style.color='var(--t3)';
-    pill.style.background='var(--bg)';
-  }
-}
-
 function toggleAutoScan(btn){
   var novoEstado=!autoScanOn;
   // Optimistic UI: atualiza imediatamente
@@ -2196,7 +2209,6 @@ function toggleAutoScan(btn){
   if(autoScanOn){startAutoScan()}else{stopAutoScan()}
   if(curProfile)curProfile.auto_scan=autoScanOn;
   localStorage.setItem(uKey('autoscan'),autoScanOn?'1':'0');
-  updateScanStatusPill();
   // ── FIX v10.2: trata erro do save e faz rollback ──
   if(sb&&curUser){
     sb.from('profiles').update({auto_scan:novoEstado}).eq('id',curUser.id).then(function(r){
@@ -2208,7 +2220,6 @@ function toggleAutoScan(btn){
         if(curProfile)curProfile.auto_scan=autoScanOn;
         localStorage.setItem(uKey('autoscan'),autoScanOn?'1':'0');
         if(autoScanOn){startAutoScan()}else{stopAutoScan()}
-        updateScanStatusPill();
         toast('Erro ao salvar: '+(r.error.message||'tente novamente'),'err');
       }else{
         toast(novoEstado?'Auto-scan ATIVADO — salvo na nuvem':'Auto-scan desativado','ok');
@@ -2219,7 +2230,6 @@ function toggleAutoScan(btn){
       autoScanOn=!novoEstado;
       btn.classList.toggle('on');
       if(curProfile)curProfile.auto_scan=autoScanOn;
-      updateScanStatusPill();
       toast('Sem internet — não foi possível salvar','err');
     });
   }else{
@@ -2397,7 +2407,7 @@ function maybeShowOnboarding(){
   if(!m)return;
   var td=document.getElementById('obTrialDays');
   if(td){
-    var days=parseInt(curProfile.trial_days)||7;
+    var days=parseInt(curProfile.trial_days)||3;
     td.textContent=days+(days===1?' dia':' dias');
   }
   m.style.display='flex';
@@ -2564,31 +2574,10 @@ function updateMotorStatus(){
   var progEl=document.getElementById('motorProg');
   if(!lastEl||!nextEl)return;
 
-  // ── AUTO-SCAN: múltiplas fontes da verdade ──
-  // Supabase é a autoridade, mas se tiver inconsistência,
-  // confia em: (1) presença de sinais recentes, (2) variável local, (3) localStorage
-  var autoScanSupabase=curProfile.auto_scan===true;
-  var autoScanLocal=(typeof autoScanOn!=='undefined'&&autoScanOn===true);
-  var autoScanLS=localStorage.getItem(uKey('autoscan'))==='1';
-  // Se teve sinal nas últimas 3h, o Worker está rodando pra mim mesmo que o campo esteja dessincrono
-  var hasRecentSignal=signals.some(function(s){
-    if(!s||!s.time)return false;
-    return (Date.now()-new Date(s.time).getTime())<(3*3600000);
-  });
-  var autoScanReal=autoScanSupabase||autoScanLocal||autoScanLS||hasRecentSignal;
-
+  var autoScanOn=curProfile.auto_scan||false;
   var scanIntHours=parseFloat(curProfile.scan_interval)||4;
   var scanIntMs=scanIntHours*3600000;
-
-  // ── ÚLTIMO SCAN: do Supabase, OU inferido do sinal mais recente se Supabase não atualizou ──
-  var lastScanSupabase=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
-  var lastScanInferred=0;
-  if(signals.length>0){
-    var maxT=0;
-    signals.forEach(function(s){if(s&&s.time){var t=new Date(s.time).getTime();if(t>maxT)maxT=t;}});
-    lastScanInferred=maxT;
-  }
-  var lastScan=Math.max(lastScanSupabase,lastScanInferred);
+  var lastScan=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
   var now=Date.now();
 
   // ── LÊ ESTADO REAL DO WORKER ──
@@ -2598,7 +2587,7 @@ function updateMotorStatus(){
     try{scanProgress=JSON.parse(curProfile.scan_progress);}catch(e){}
   }
 
-  // ── ÚLTIMO SCAN (display) ──
+  // ── ÚLTIMO SCAN ──
   if(lastScan>0){
     var mins=Math.round((now-lastScan)/60000);
     if(mins<1)lastEl.textContent='agora há pouco';
@@ -2612,7 +2601,7 @@ function updateMotorStatus(){
   }
 
   // ── DESATIVADO ──
-  if(!autoScanReal){
+  if(!autoScanOn){
     nextEl.textContent='DESATIVADO';
     nextEl.style.color='var(--red)';
     nextEl.style.fontSize='14px';
@@ -2624,12 +2613,8 @@ function updateMotorStatus(){
     var cutoff=now-86400000;
     var sig24=signals.filter(function(s){return s&&s.time&&new Date(s.time).getTime()>cutoff;}).length;
     if(sig24El)sig24El.textContent=sig24;
-    updateScanStatusPill();
     return;
   }
-
-  // A partir daqui, autoScanOn é usado pelo resto do código — sincroniza
-  var autoScanOn=autoScanReal;
 
   // ── ESTADO REAL: SCANNING ──
   if(scanStatus==='scanning'&&scanProgress){
@@ -2709,9 +2694,6 @@ function updateMotorStatus(){
   var cutoff24=now-86400000;
   var sig24v=signals.filter(function(s){return s&&s.time&&new Date(s.time).getTime()>cutoff24;}).length;
   if(sig24El)sig24El.textContent=sig24v;
-
-  // Atualiza pill de status no topo
-  updateScanStatusPill();
 }
 
 // ── REFETCH PROFILE ADAPTATIVO (global para ser acessível do motorTick) ──
@@ -2813,7 +2795,7 @@ function checkTrialWarning(){
   var el=document.getElementById('trialWarning');if(!el||!curProfile)return;
   if(curProfile.subscription_status==='premium'){el.style.display='none';return;}
   var trialStart=curProfile.trial_start||curProfile.created_at||new Date().toISOString();
-  var trialDays=parseInt(curProfile.trial_days)||7;
+  var trialDays=parseInt(curProfile.trial_days)||3;
   var tStart=new Date(trialStart);if(isNaN(tStart.getTime()))tStart=new Date();
   var endMs=tStart.getTime()+trialDays*86400000;
   var hoursLeft=(endMs-Date.now())/3600000;
