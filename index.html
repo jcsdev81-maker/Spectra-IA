@@ -1530,9 +1530,54 @@ function renderSignals(){
     h+='</div>';
     // Footer
     h+='<div class="sig-meta" style="padding:0 14px 8px"><span>R:R '+(s.rr||'—')+'</span>'+(s.status==='open'?'<span style="color:var(--acc)">● ABERTO</span>':s.status==='stale'?'<span style="color:var(--t3)">● INFORMATIVO</span>':s.status==='tp3'?'<span style="color:var(--grn)">✅ COMPLETO</span>':s.status==='sl'?'<span style="color:var(--red)">❌ STOP</span>':'')+'</div>';
+    var sidx=signals.indexOf(s);
+    h+='<div style="padding:0 14px 14px"><button onclick="sendSinalTelegram('+sidx+')" style="width:100%;padding:10px;background:var(--bg);border:1px solid #229ED944;border-radius:8px;color:#229ED9;font-family:var(--f2);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer" onmouseover="this.style.background='#229ED922'" onmouseout="this.style.background='var(--bg)'">📤 ENVIAR AO TELEGRAM</button></div>';
     h+='</div>';
   });
   document.getElementById('sigList').innerHTML=h;
+}
+function sendSinalTelegram(idx){
+  var s=signals[idx];
+  if(!s){toast('Sinal não encontrado','err');return;}
+  var chatId=(curProfile&&curProfile.telegram_chat_id)?curProfile.telegram_chat_id:'';
+  if(!chatId){toast('Configure seu Chat ID no Telegram primeiro','err');return;}
+  var icon=s.direcao==='LONG'?'🟢':'🔴';
+  var nome=(s.par||'').replace('USDT','');
+  var f=function(v){return(!v||v===0)?'—':Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6});};
+  var fReg=function(r){return(r&&r[0]&&r[1])?(f(Math.min(r[0],r[1]))+' ~ '+f(Math.max(r[0],r[1]))):null;};
+  var regE=fReg(s.regEntrada),regTP1=fReg(s.regTP1),regTP2=fReg(s.regTP2),regTP3=fReg(s.regTP3);
+  var msg=icon+' <b>SPECTRA — SINAL '+s.direcao+'</b>\n';
+  msg+='<b>'+nome+'/USDT</b> · 8H · '+(s.estrelas||'')+'\n━━━━━━━━━━━━━━━━━━\n';
+  if(s.fase)msg+='📍 <b>Fase:</b> '+s.fase+'\n';
+  if(s.forca)msg+='💪 <b>Força:</b> '+s.forca+'% confluência\n';
+  msg+='\n<b>⚙️ GESTÃO DE RISCO</b>\n';
+  msg+='📍 '+(regE?'Região Entrada: <code>'+regE+'</code>\n   Preço: <code>'+f(s.entrada)+'</code>\n':'Entrada: <code>'+f(s.entrada)+'</code>\n');
+  msg+='🛡 Stop: <code>'+f(s.stop)+'</code>\n';
+  msg+='🎯 TP1: <code>'+(regTP1||f(s.tp1))+'</code>\n';
+  if(regTP2||s.tp2)msg+='🎯 TP2: <code>'+(regTP2||f(s.tp2))+'</code>\n';
+  if(regTP3||s.tp3)msg+='🎯 TP3: <code>'+(regTP3||f(s.tp3))+'</code>\n';
+  msg+='📊 R:R: <code>'+(s.rr||'—')+'</code>\n\n';
+  if(s.pilares&&typeof s.pilares==='object'){
+    msg+='<b>🏛 7 PILARES</b>\n';
+    var pN={elliott:'Elliott Wave',fibonacci:'Fibonacci LOG',macd_12_72:'MACD 12/72/35',dow:'Dow Theory',wyckoff:'Wyckoff',gann:'Gann',price_action:'Price Action'};
+    Object.keys(pN).forEach(function(k){
+      var p=s.pilares[k];if(!p)return;
+      var sc=p.score||0,pd=(p.direcao||'').toUpperCase();
+      var ic=pd.indexOf('COMPRA')>-1?'▲':pd.indexOf('VENDA')>-1?'▼':'·';
+      var an=(p.analise||'').length>60?p.analise.substring(0,60)+'...':p.analise||'';
+      msg+=ic+' <b>'+pN[k]+'</b> ['+sc+'%]\n';
+      if(an)msg+='  <i>'+an+'</i>\n';
+    });
+    msg+='\n';
+  }
+  if(s.motivo)msg+='<b>💡 ANÁLISE SPEC MIND</b>\n<i>'+s.motivo+'</i>\n\n';
+  msg+='━━━━━━━━━━━━━━━━━━\n⏰ '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' · Enviado manualmente';
+  if(msg.length>4000)msg=msg.substring(0,3950)+'\n\n... [análise completa no app]';
+  toast('Enviando ao Telegram...','inf');
+  fetch(PROXIES[0]+'/send-signal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,chat_id:chatId})})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d&&d.status==='ok')toast('✅ Sinal enviado ao Telegram!','ok');else toast('Erro ao enviar — verifique Chat ID','err');})
+    .catch(function(){toast('Erro de conexão','err');});
 }
 function clearSigs(){if(!signals.length)return;if(!confirm('Limpar sinais? Trades com resultado serão mantidos.'))return;signals=signals.filter(function(s){return s.status&&s.status!=='open'});saveSigs();renderSignals();updateDash();toast('Sinais limpos (trades mantidos)','inf');}
 
