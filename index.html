@@ -456,10 +456,8 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
             <div style="font-family:var(--f2);font-size:11px;color:var(--t2);letter-spacing:1px;font-weight:600">⏱ INTERVALO DE SCAN</div>
             <div id="scanIntPlan" style="font-family:var(--f2);font-size:9px;padding:2px 8px;border-radius:10px;background:var(--accd);color:var(--acc);border:1px solid var(--acc)">—</div>
           </div>
-          <div id="scanIntOptions" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
-            <button data-int="0.5" onclick="setScanInterval(0.5,this)" class="int-btn">30 min</button>
-            <button data-int="1" onclick="setScanInterval(1,this)" class="int-btn">1 h</button>
-            <button data-int="2" onclick="setScanInterval(2,this)" class="int-btn">2 h</button>
+          <div id="scanIntOptions" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">
+            <button data-int="3" onclick="setScanInterval(3,this)" class="int-btn">3 h</button>
             <button data-int="4" onclick="setScanInterval(4,this)" class="int-btn">4 h</button>
             <button data-int="8" onclick="setScanInterval(8,this)" class="int-btn">8 h</button>
           </div>
@@ -767,7 +765,7 @@ function stopPillarAnim(result){
 }
 
 // ── CONFIG ──
-var PROXIES=['https://especulador-specmind.jamiscosta81.workers.dev'];
+var PROXIES=['https://especulador-specmind.jamiscosta81.workers.dev/proxy-gemini'];
 var pIdx=0;
 var signals=[];
 var monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
@@ -2054,14 +2052,7 @@ var lastMarketState={}; // Cache for quick check comparison
 // v10.3 ALINHADO AO TF 8H — candle fecha a cada 8h, abaixo de 30min é desperdício.
 // Retorna intervalo mínimo (em horas) que o user pode escolher com o plano atual
 function getMinIntervalForUser(){
-  if(!curProfile)return 1;
-  var status=(curProfile.subscription_status||'').toString().trim().toLowerCase();
-  var plan=(curProfile.plan_type||'').toString().trim().toLowerCase();
-  if(status==='premium'){
-    if(plan.indexOf('anual')>-1||plan.indexOf('trimestr')>-1)return 0.5; // 30 min (trimestral/anual)
-    return 1; // mensal = 1h
-  }
-  return 1; // trial = 1h (aumenta chance de ver sinal no período de teste)
+  return 3; // mínimo 3h — alinhado ao candle 3H e ao Worker v20
 }
 
 function getPlanLabel(){
@@ -2102,13 +2093,7 @@ function renderScanIntervalUI(){
   if(hintEl){
     // Diferencia TRIAL e MENSAL (ambos min 1h) pela subscription_status real
     var isPrem=(curProfile.subscription_status||'').toString().trim().toLowerCase()==='premium';
-    if(minH<=0.5){
-      hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: mínimo 30 min (alinhado ao TF 8H).';
-    }else if(isPrem){
-      hintEl.innerHTML='Plano <strong style="color:var(--grn)">MENSAL</strong>: mínimo 1h. <span style="color:var(--acc);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Upgrade pra Trimestral/Anual</span> libera 30 min.';
-    }else{
-      hintEl.innerHTML='Plano <strong style="color:var(--amb)">TRIAL</strong>: mínimo 1h (mesmo do mensal). <span style="color:var(--grn);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Assine Trimestral/Anual</span> pra liberar 30 min.';
-    }
+      hintEl.innerHTML='Mínimo <strong style="color:var(--grn)">3h</strong> — alinhado ao fechamento do candle 3H. Quanto menor o intervalo, mais rápido você recebe o sinal após o candle fechar.';
   }
 }
 
@@ -2577,7 +2562,7 @@ function updateMotorStatus(){
   });
   var autoScanReal=autoScanSupabase||autoScanLocal||autoScanLS||hasRecentSignal;
 
-  var scanIntHours=parseFloat(curProfile.scan_interval)||4;
+  var scanIntHours=Math.max(parseFloat(curProfile.scan_interval)||4, 3);
   var scanIntMs=scanIntHours*3600000;
 
   // ── ÚLTIMO SCAN: do Supabase, OU inferido do sinal mais recente se Supabase não atualizou ──
@@ -2666,9 +2651,15 @@ function updateMotorStatus(){
       // (que reinicia toda vez que abre o app), usa uma âncora estável baseada
       // no relógio global de 15min (minuto 0, 15, 30, 45 UTC). Assim todos os
       // devices mostram o mesmo countdown.
-      var nextCronMin=15-(new Date().getUTCMinutes()%15);
-      var secInCurMin=new Date().getUTCSeconds();
-      var msTillNextCron=(nextCronMin*60 - secInCurMin)*1000;
+      // Âncora nos fechamentos 3H: 00:05, 03:05, 06:05, 09:05, 12:05, 15:05, 18:05, 21:05 UTC
+      var dNow=new Date();
+      var hUtc=dNow.getUTCHours(),mUtc=dNow.getUTCMinutes(),sUtc=dNow.getUTCSeconds();
+      var hDecimal=hUtc+mUtc/60+sUtc/3600;
+      var nextCronH=Math.ceil(hDecimal/3)*3;
+      if(nextCronH>=24)nextCronH=0;
+      var nextCronDay=dNow.getUTCDate()+(nextCronH<hUtc?1:0);
+      var msTillNextCron=new Date(Date.UTC(dNow.getUTCFullYear(),dNow.getUTCMonth(),nextCronDay,nextCronH,5,0))-now;
+      if(msTillNextCron<0)msTillNextCron+=86400000;
       nextMs=now+msTillNextCron;
       elapsedMs=0;
     }
@@ -2790,7 +2781,7 @@ function motorTick(){
     var autoScanOn=curProfile.auto_scan||false;
     if(autoScanOn&&scanStatus==='idle'){
       var lastScan=curProfile.last_scan_at?new Date(curProfile.last_scan_at).getTime():0;
-      var scanIntMs=(parseFloat(curProfile.scan_interval)||4)*3600000;
+      var scanIntMs=(Math.max(parseFloat(curProfile.scan_interval)||4, 3))*3600000;
       if(lastScan>0){
         var secToNext=Math.round(((lastScan+scanIntMs)-Date.now())/1000);
         if(secToNext<=30&&secToNext>-300&&window._profileIv&&!window._anticipating){
