@@ -765,7 +765,7 @@ function stopPillarAnim(result){
 }
 
 // ── CONFIG ──
-var PROXIES=['https://especulador-specmind.jamiscosta81.workers.dev/proxy-gemini'];
+var PROXIES=['https://especulador-specmind.jamiscosta81.workers.dev'];
 var pIdx=0;
 var signals=[];
 var monitored=['BTCUSDT','ETHUSDT','SOLUSDT','BNBUSDT','XRPUSDT'];
@@ -900,7 +900,7 @@ async function callGemini(systemPrompt,userText,skipTg){
     // Inclui chat_id só se NÃO é auto-scan (manual analysis → Telegram direto)
     if(!skipTg&&curProfile&&curProfile.telegram_chat_id)payload.telegram_chat_id=curProfile.telegram_chat_id;
     if(skipTg)payload.send_telegram=false;
-    var res=await fetch(proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
+    var res=await fetch(proxy+'/proxy-gemini',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
     clearTimeout(timeout);
     if(!res.ok){var errTxt=await res.text();console.error('[SPECTRA] Proxy erro:',errTxt);throw new Error('Proxy '+res.status+': '+errTxt.substring(0,80));}
     var data=await res.json();
