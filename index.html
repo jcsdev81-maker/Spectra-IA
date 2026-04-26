@@ -460,25 +460,12 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
       </div>
       <!-- AUTO-SCAN + TELEGRAM -->
       <div class="card" style="border-color:var(--acc);margin-bottom:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <div><div style="font-family:var(--f2);font-size:11px;color:var(--acc);letter-spacing:1.5px;font-weight:600">⚡ AUTO-SCAN</div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:2px">IA analisa seus pares em ciclos</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-family:var(--f2);font-size:11px;color:var(--acc);letter-spacing:1.5px;font-weight:600">⚡ AUTO-SCAN</div>
+            <div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:2px">IA analisa seus pares a cada <b style="color:var(--t2)">4 horas</b></div>
+          </div>
           <button id="tgAutoScan" class="al-toggle" onclick="toggleAutoScan(this)"></button>
-        </div>
-
-        <!-- ── INTERVALO DE SCAN ── -->
-        <div style="background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:10px;margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div style="font-family:var(--f2);font-size:11px;color:var(--t2);letter-spacing:1px;font-weight:600">⏱ INTERVALO DE SCAN</div>
-            <div id="scanIntPlan" style="font-family:var(--f2);font-size:9px;padding:2px 8px;border-radius:10px;background:var(--accd);color:var(--acc);border:1px solid var(--acc)">—</div>
-          </div>
-          <div id="scanIntOptions" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
-            <button data-int="0.5" onclick="setScanInterval(0.5,this)" class="int-btn">30 min</button>
-            <button data-int="1" onclick="setScanInterval(1,this)" class="int-btn">1 h</button>
-            <button data-int="2" onclick="setScanInterval(2,this)" class="int-btn">2 h</button>
-            <button data-int="4" onclick="setScanInterval(4,this)" class="int-btn">4 h</button>
-            <button data-int="8" onclick="setScanInterval(8,this)" class="int-btn">8 h</button>
-          </div>
-          <div id="scanIntHint" style="font-family:var(--f2);font-size:9px;color:var(--t3);margin-top:6px;line-height:1.4">—</div>
         </div>
 
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
@@ -570,7 +557,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
         <button onclick="deleteAccount()" style="width:100%;padding:10px;border-radius:8px;background:transparent;border:1px solid var(--red)44;color:var(--red);font-family:var(--f2);font-size:10px;cursor:pointer;opacity:.7">Excluir minha conta</button>
       </div>
       <div style="text-align:center;margin-top:20px;font-family:var(--f2);font-size:10px;color:var(--t3);line-height:1.8">
-        SPECTRA v4.6 • 2026<br>
+        SPECTRA v4.7 • 2026<br>
         <a href="#" onclick="alert('Termos: app oferecido como análise educacional. Trader assume total responsabilidade pelas operações.');return false" style="color:var(--acc);text-decoration:none">Termos</a>
         •
         <a href="#" onclick="alert('Privacidade: dados armazenados em Supabase com RLS. Email/senha criptografados. Telegram Chat ID opcional.');return false" style="color:var(--acc);text-decoration:none">Privacidade</a>
@@ -796,8 +783,10 @@ var isScanning=false,isAnalyzing=false,aFilt='ALL';
 function uKey(name){return'spectra_'+(curUser?name+'_'+curUser.id:name)}
 
 // Safe JSON parse — se corromper, retorna fallback
+// Suporta tanto string (text column) quanto objeto já parseado (jsonb column)
 function safeJSON(raw,fallback){
   if(!raw)return fallback;
+  if(typeof raw==='object')return Array.isArray(raw)||typeof fallback!=='object'?raw:fallback;
   try{var v=JSON.parse(raw);return v!==null&&v!==undefined?v:fallback;}
   catch(e){console.warn('[SPECTRA] JSON corrupt, using fallback');return fallback;}
 }
@@ -921,7 +910,7 @@ async function callGemini(systemPrompt,userText,skipTg){
   var timeout=setTimeout(function(){controller.abort()},60000);
   try{
     var proxy=PROXIES[pIdx];pIdx=(pIdx+1)%PROXIES.length;
-    var payload={system:systemPrompt,messages:[{role:'user',parts:[{text:userText}]}],max_tokens:2000};
+    var payload={system:systemPrompt,messages:[{role:'user',parts:[{text:userText}]}],max_tokens:4000};
     // Inclui chat_id só se NÃO é auto-scan (manual analysis → Telegram direto)
     if(!skipTg&&curProfile&&curProfile.telegram_chat_id)payload.telegram_chat_id=curProfile.telegram_chat_id;
     if(skipTg)payload.send_telegram=false;
@@ -951,7 +940,7 @@ function findSwings(highs,lows,lb){var sh=[],sl=[];for(var i=lb;i<highs.length-l
 function detectMACDFailure(macdLine,signal,lookback){
   lookback=lookback||305;
   var len=Math.min(macdLine.length,signal.length);
-  for(var i=len-2;i>=Math.max(1,len-lookback);i--){
+  for(var i=len-2;i>=Math.max(2,len-lookback);i--){
     var diff_now=macdLine[i+1]-signal[i+1];
     var diff_prev=macdLine[i]-signal[i];
     var diff_ante=macdLine[i-1]-signal[i-1];
@@ -964,24 +953,38 @@ function detectMACDFailure(macdLine,signal,lookback){
     var zonaStr=acima?'ACIMA DO ZERO':abaixo?'ABAIXO DO ZERO':'ZONA DO ZERO';
     var forcaStr=acima||abaixo?'ALTA PROBABILIDADE ou PROBABILIDADE MODERADA':'MODERADO';
     
-    // FALHA BULL: DIF abaixo da DEA, se aproximou, chegou perto e rejeitou pra baixo
-    // Fase 3 SHORT: compradores tentaram retomar e FALHARAM
-    if(diff_ante<0 && diff_prev<0 && diff_now<0 && 
-       Math.abs(diff_prev)<Math.abs(diff_ante) && Math.abs(diff_prev)<threshold &&
+    // PADRÃO 1 — FALHA BULL → SHORT (histograma negativo: DIF se aproximou da DEA e rejeitou para baixo)
+    if(diff_ante<0&&diff_prev<0&&diff_now<0&&
+       Math.abs(diff_prev)<Math.abs(diff_ante)&&Math.abs(diff_prev)<threshold&&
        Math.abs(diff_now)>Math.abs(diff_prev)){
       var desc='★★★ FASE 3 SHORT: DIF tentou cruzar acima da DEA e REJEITOU — compradores falharam. ';
       desc+=abaixo?'ABAIXO do zero = ALTA PROBABILIDADE (vendedor confirmado).':acima?'ACIMA do zero = PROBABILIDADE MODERADA (vendedor emergindo).':'Zona do zero = BAIXA CONFLUÊNCIA.';
       return{type:'FALHA BULL → SHORT',desc:desc,barsAgo:len-1-i,zona:zonaStr,forca:forcaStr};
     }
     
-    // FALHA BEAR: DIF acima da DEA, se aproximou, chegou perto e rejeitou pra cima
-    // Fase 3 LONG: vendedores tentaram retomar e FALHARAM
-    if(diff_ante>0 && diff_prev>0 && diff_now>0 && 
-       diff_prev<diff_ante && diff_prev<threshold &&
+    // PADRÃO 2 — FALHA BEAR → LONG (histograma positivo: DIF se aproximou da DEA e rejeitou para cima)
+    if(diff_ante>0&&diff_prev>0&&diff_now>0&&
+       diff_prev<diff_ante&&diff_prev<threshold&&
        diff_now>diff_prev){
-      var desc='★★★ FASE 3 LONG: DIF tentou cruzar abaixo da DEA e REJEITOU — vendedores falharam. ';
-      desc+=acima?'ACIMA do zero = ALTA PROBABILIDADE (comprador confirmado).':abaixo?'ABAIXO do zero = PROBABILIDADE MODERADA (comprador emergindo).':'Zona do zero = BAIXA CONFLUÊNCIA.';
-      return{type:'FALHA BEAR → LONG',desc:desc,barsAgo:len-1-i,zona:zonaStr,forca:forcaStr};
+      var desc2='★★★ FASE 3 LONG: DIF tentou cruzar abaixo da DEA e REJEITOU — vendedores falharam. ';
+      desc2+=acima?'ACIMA do zero = ALTA PROBABILIDADE (comprador confirmado).':abaixo?'ABAIXO do zero = PROBABILIDADE MODERADA (comprador emergindo).':'Zona do zero = BAIXA CONFLUÊNCIA.';
+      return{type:'FALHA BEAR → LONG',desc:desc2,barsAgo:len-1-i,zona:zonaStr,forca:forcaStr};
+    }
+
+    // PADRÃO 3 — REJEIÇÃO DA MÉDIA (cross attempt rejeitado — mais preciso que Padrões 1 e 2)
+    // dp ≈ 0: rápida QUASE encostou na lenta (momento exato da tentativa de cruzamento)
+    // Fallback: quando signal[i] ≈ 0 (zona zero), usa diff_ante como referência
+    var sigAbs=Math.abs(signal[i]);
+    var proxThreshold=sigAbs>0.0001?sigAbs*0.05:(Math.abs(diff_ante)*0.05||0.0001);
+    var proxLenta=Math.abs(diff_prev)<proxThreshold;
+
+    // BULL attempt rejeitado → SHORT: da<0, dp≈0 (tentou subir), dn<0 e menor que dp (rejeitado)
+    if(proxLenta&&diff_ante<0&&diff_now<0&&diff_now<diff_prev){
+      return{type:'FALHA BULL → SHORT',desc:'★★★ REJEIÇÃO DA DEA: DIF tentou cruzar acima e foi rejeitada. Setup SHORT confirmado.',barsAgo:len-1-i,zona:zonaStr,forca:forcaStr};
+    }
+    // BEAR attempt rejeitado → LONG: da>0, dp≈0 (tentou cair), dn>0 e maior que dp (rejeitado)
+    if(proxLenta&&diff_ante>0&&diff_now>0&&diff_now>diff_prev){
+      return{type:'FALHA BEAR → LONG',desc:'★★★ REJEIÇÃO DA DEA: DIF tentou cruzar abaixo e foi rejeitada. Setup LONG confirmado.',barsAgo:len-1-i,zona:zonaStr,forca:forcaStr};
     }
   }
   return{type:'SEM FALHA DETECTADA',desc:'Nenhuma falha detectada nas últimas '+lookback+' barras analisadas.',barsAgo:null,zona:'—',forca:'—'};
@@ -1027,10 +1030,14 @@ function calcVolumeProfile(highs,lows,volumes,bucketsN){
 
 // ── FETCH MARKET DATA (700 candles Binance) ──
 async function fetchMarketData(symbol,interval){
+  var ctrl=new AbortController();
+  var t=setTimeout(function(){ctrl.abort()},12000);
+  try{
   var clean=symbol.replace(/^[A-Z]+:/,'');
   var biMap={'5':'5m','15':'15m','30':'30m','60':'1h','240':'4h','480':'8h','D':'1d','W':'1w','M':'1M'};
-  var kl=await(await fetch('https://api.binance.com/api/v3/klines?symbol='+clean+'&interval='+(biMap[interval]||'4h')+'&limit=700')).json();
-  var kd=await(await fetch('https://api.binance.com/api/v3/klines?symbol='+clean+'&interval=1d&limit=700')).json();
+  var kl=await(await fetch('https://api.binance.com/api/v3/klines?symbol='+clean+'&interval='+(biMap[interval]||'4h')+'&limit=700',{signal:ctrl.signal})).json();
+  var kd=await(await fetch('https://api.binance.com/api/v3/klines?symbol='+clean+'&interval=1d&limit=700',{signal:ctrl.signal})).json();
+  clearTimeout(t);
   var c=kl.map(function(k){return+k[4]}),h=kl.map(function(k){return+k[2]}),l=kl.map(function(k){return+k[3]}),o=kl.map(function(k){return+k[1]}),v=kl.map(function(k){return+k[5]});
   var cd=kd.map(function(k){return+k[4]}),hd=kd.map(function(k){return+k[2]}),ld=kd.map(function(k){return+k[3]});
   var p=c[c.length-1],dec=p<1?6:p<100?4:2;
@@ -1162,6 +1169,11 @@ async function fetchMarketData(symbol,interval){
     // VOLUME + CANDLE
     volStatus:volStatus,candle:candle
   };
+  }catch(e){
+    clearTimeout(t);
+    if(e.name==='AbortError')throw new Error('Binance timeout 12s — tente novamente');
+    throw new Error('Binance: '+e.message);
+  }
 }
 
 // ── SYSTEM PROMPT (SPEC MIND completo) ──
@@ -1558,17 +1570,89 @@ function renderSignals(){
     h+='<div>🕐 Sinal: <span style="color:var(--t1)">'+fDate(s.time)+'</span></div>';
     if(s.tp1_hit)h+='<div>✅ TP1: <span style="color:var(--grn)">'+fDate(s.tp1_at)+'</span><span style="color:var(--t2)">'+fP(s.tp1_price)+'</span></div>';
     if(s.tp2_hit)h+='<div>✅✅ TP2: <span style="color:var(--grn)">'+fDate(s.tp2_at)+'</span><span style="color:var(--t2)">'+fP(s.tp2_price)+'</span></div>';
+    if(s.tp3_hit)h+='<div>✅✅✅ TP3: <span style="color:var(--grn)">'+fDate(s.tp3_at)+'</span><span style="color:var(--t2)">'+fP(s.tp3_price)+'</span></div>';
+    if(s.tp4_hit)h+='<div>✅✅✅✅ TP4: <span style="color:var(--grn)">'+fDate(s.tp4_at)+'</span><span style="color:var(--t2)">'+fP(s.tp4_price)+'</span></div>';
+    if(s.tp5_hit)h+='<div>🏆 TP5: <span style="color:var(--grn)">'+fDate(s.tp5_at)+'</span><span style="color:var(--t2)">'+fP(s.tp5_price)+'</span></div>';
+    if(s.stop_atual&&s.stop_atual!==s.stop&&s.stop_movido_em)h+='<div>🔒 Stop movido: <span style="color:var(--acc)">'+fDate(s.stop_movido_em)+'</span> → <code>'+f(s.stop_atual)+'</code></div>';
+    if(s.status==='sl')h+='<div>❌ Stop: <span style="color:var(--red)">'+fDate(s.closedAt)+'</span><span style="color:var(--t2)">'+fP(s.closePrice)+'</span></div>';
+    if(s.status==='manual')h+='<div>🔐 Encerrado manualmente: <span style="color:var(--amb)">'+fDate(s.closedAt)+'</span><span style="color:var(--t2)">'+fP(s.closePrice)+'</span></div>';
+    if(s.status==='tp_trail')h+='<div>🏆 Fechado no trail: <span style="color:var(--grn)">'+fDate(s.closedAt)+'</span><span style="color:var(--t2)">'+fP(s.closePrice)+'</span></div>';
+    if(s.tp2_hit)h+='<div>✅✅ TP2: <span style="color:var(--grn)">'+fDate(s.tp2_at)+'</span><span style="color:var(--t2)">'+fP(s.tp2_price)+'</span></div>';
     if(s.status==='tp3')h+='<div>✅✅✅ TP3: <span style="color:var(--grn)">'+fDate(s.tp3_at)+'</span><span style="color:var(--t2)">'+fP(s.tp3_price)+'</span></div>';
     if(s.status==='sl')h+='<div>❌ Stop: <span style="color:var(--red)">'+fDate(s.closedAt)+'</span><span style="color:var(--t2)">'+fP(s.closePrice)+'</span></div>';
     if(s.closedAt&&s.time){var dur=Math.round((new Date(s.closedAt)-new Date(s.time))/60000);var durTxt=dur>=60?Math.floor(dur/60)+'h'+String(dur%60).padStart(2,'0')+'m':dur+'min';h+='<div>⏱ Duração: <span style="color:var(--amb)">'+durTxt+'</span></div>';}
     h+='</div>';
-    // Footer
-    h+='<div class="sig-meta" style="padding:0 14px 8px"><span>R:R '+(s.rr||'—')+'</span>'+(s.status==='open'?'<span style="color:var(--acc)">● ABERTO</span>':s.status==='stale'?'<span style="color:var(--t3)">● INFORMATIVO</span>':s.status==='tp3'?'<span style="color:var(--grn)">✅ COMPLETO</span>':s.status==='sl'?'<span style="color:var(--red)">❌ STOP</span>':'')+'</div>';
+    // Footer status
+    h+='<div class="sig-meta" style="padding:0 14px 8px"><span>R:R '+(s.rr||'—')+'</span>';
+    if(s.status==='open'){
+      // Barra de progresso dos TPs
+      var tpLevels=[{k:'tp1',l:'TP1'},{k:'tp2',l:'TP2'},{k:'tp3',l:'TP3'},{k:'tp4',l:'TP4'},{k:'tp5',l:'TP5'}].filter(function(t){return s[t.k]>0;});
+      if(tpLevels.length){
+        h+='<div style="display:flex;gap:3px;margin:8px 14px 4px;align-items:center">';
+        tpLevels.forEach(function(t){
+          var hit=s[t.k+'_hit'];
+          var col=hit?'var(--grn)':s.stop_atual&&s.stop_atual>=s[t.k]?'var(--amb)':'var(--brd)';
+          h+='<div style="flex:1;height:4px;background:'+col+';border-radius:2px;transition:all .3s"></div>';
+          h+='<span style="font-family:var(--f2);font-size:9px;color:'+(hit?'var(--grn)':'var(--t3)')+'">'+t.l+'</span>';
+        });
+        h+='</div>';
+      }
+      // Stop dinâmico badge
+      if(s.stop_atual&&s.stop_atual!==s.stop){
+        h+='<div style="margin:0 14px 6px;padding:4px 8px;background:var(--ambd);border-radius:4px;font-family:var(--f2);font-size:10px;color:var(--amb)">🔒 Stop trail: <code>'+f(s.stop_atual)+'</code></div>';
+      }
+      h+='<span style="color:var(--acc)">● ABERTO</span>';
+    } else if(s.status==='stale'){
+      h+='<span style="color:var(--t3)">● INFORMATIVO</span>';
+    } else if(s.status==='tp3'||s.status==='tp4'||s.status==='tp5'||s.status==='tp_trail'){
+      var tpLabel=s.status==='tp_trail'?'🏆 TRAIL':s.status.toUpperCase();
+      h+='<span style="color:var(--grn)">✅ '+tpLabel+' COMPLETO</span>';
+    } else if(s.status==='sl'){
+      h+='<span style="color:var(--red)">❌ STOP</span>';
+    } else if(s.status==='manual'){
+      h+='<span style="color:var(--amb)">🔐 ENCERRADO</span>';
+    } else if(s.status==='expired'){
+      h+='<span style="color:var(--t3)">⏰ EXPIRADO</span>';
+    }
+    h+='</div>';
     var sidx=signals.indexOf(s);
-    h+='<div style="padding:0 14px 14px"><button onclick="sendSinalTelegram('+sidx+')" style="width:100%;padding:10px;background:var(--bg);border:1px solid #229ED944;border-radius:8px;color:#229ED9;font-family:var(--f2);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer" onmouseover="this.style.background='#229ED922'" onmouseout="this.style.background='var(--bg)'">📤 ENVIAR AO TELEGRAM</button></div>';
+    h+='<div style="padding:0 14px 14px;display:flex;gap:8px">';
+    h+='<button onclick="sendSinalTelegram('+sidx+')" style="flex:1;padding:10px;background:var(--bg);border:1px solid #229ED944;border-radius:8px;color:#229ED9;font-family:var(--f2);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer" onmouseover="this.style.background=\'#229ED922\'" onmouseout="this.style.background=\'var(--bg)\'">📤 TELEGRAM</button>';
+    if(s.status==='open'){
+      h+='<button onclick="fecharTrade(\''+escId(s.id)+'\')" style="padding:10px 14px;background:var(--bg);border:1px solid var(--red)44;border-radius:8px;color:var(--red);font-family:var(--f2);font-size:12px;font-weight:700;cursor:pointer" onmouseover="this.style.background=\'var(--redd)\'" onmouseout="this.style.background=\'var(--bg)\'">🔐 FECHAR</button>';
+    }
+    h+='</div>';
     h+='</div>';
   });
   document.getElementById('sigList').innerHTML=h;
+}
+function escId(id){return(id||'').replace(/['"]/g,'');}
+function fecharTrade(signalId){
+  if(!signalId){toast('ID do trade não encontrado','err');return;}
+  var sig=signals.find(function(s){return s&&s.id===signalId;});
+  if(!sig){toast('Trade não encontrado','err');return;}
+  var nome=(sig.par||'').replace('USDT','');
+  if(!confirm('Encerrar trade '+nome+'/USDT '+sig.direcao+' agora?\n\nO preço atual será usado como saída.')){return;}
+  if(!curUser||!curUser.id){toast('Faça login para encerrar trades','err');return;}
+  var proxy=PROXIES[0];
+  var chatId=(curProfile&&curProfile.telegram_chat_id)?curProfile.telegram_chat_id:'';
+  toast('Encerrando trade '+nome+'...','inf');
+  fetch(proxy+'/fechar-trade',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({user_id:curUser.id,signal_id:signalId,chat_id:chatId})
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    if(d&&d.status==='ok'){
+      toast('✅ Trade '+nome+' encerrado! '+(d.pnl>=0?'+':'')+d.pnl.toFixed(2)+'%','ok');
+      // Atualiza sinal local
+      var s=signals.find(function(x){return x&&x.id===signalId;});
+      if(s){s.status='manual';s.closedAt=new Date().toISOString();}
+      saveSigs();renderSignals();updateDash();
+    }else{
+      toast('Erro ao encerrar: '+(d&&d.msg?d.msg:'tente novamente'),'err');
+    }
+  }).catch(function(){toast('Erro de conexão','err');});
 }
 function sendSinalTelegram(idx){
   var s=signals[idx];
@@ -1617,18 +1701,18 @@ function sendSinalTelegram(idx){
     .catch(function(){toast('Erro de conexão','err');});
 }
 function setRiskLevel(val){
-  val=parseInt(val);
+  val=parseInt(val)||2;
   var labels={1:'🛡 Conservador',2:'⚖️ Moderado',3:'⚡ Agressivo'};
   var minPillars={1:5,2:4,3:3};
   var el=document.getElementById('riskLabel');
   if(el)el.textContent=labels[val]||'Moderado';
-  if(curProfile){
+  localStorage.setItem('risk_level',val);
+  if(curProfile&&curUser&&sb){
     curProfile.risk_level=val;
     curProfile.min_pillars=minPillars[val];
-    sb.from('profiles').update({risk_level:val,min_pillars:minPillars[val]}).eq('id',curUser.id).catch(function(){});
+    sb.from('profiles').update({risk_level:val,min_pillars:minPillars[val]}).eq('id',curUser.id).catch(function(e){console.warn('[SPECTRA] setRiskLevel save erro:',e);});
+    toast('Nível de risco: '+(labels[val]||'Moderado'),'ok');
   }
-  localStorage.setItem('risk_level',val);
-  toast('Nível de risco: '+(labels[val]||'Moderado'),'ok');
 }
 
 function mutePair(pair,evt){
@@ -1654,7 +1738,7 @@ function updateDash(){
   if(!document.getElementById('dWR'))return;
   // Classificação dos sinais — win = qualquer TP (tp1/tp2/tp3)
   var ops=signals.filter(function(s){return s.direcao==='LONG'||s.direcao==='SHORT'});
-  var wins=ops.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'||s.status==='tp_trail'});
+  var wins=ops.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'||s.status==='tp4'||s.status==='tp5'||s.status==='tp_trail'||s.status==='manual'});
   var losses=ops.filter(function(s){return s.status==='sl'});
   var open=ops.filter(function(s){return!s.status||s.status==='open'});
   var closed=wins.length+losses.length;
@@ -1796,23 +1880,27 @@ function renderOpenSignals(open){
   open.slice(0,5).forEach(function(s){
     var dir=(s.direcao||'').toUpperCase();
     var dirCol=dir==='LONG'?'var(--grn)':'var(--red)';
-    // Progresso TP
-    var prog=(s.tp1_hit?'✅':'⬜')+(s.tp2_hit?'✅':'⬜')+(s.tp3_hit?'✅':'⬜');
+    // Progresso TP (até TP5)
+    var tpSteps=[{k:'tp1',l:'TP1'},{k:'tp2',l:'TP2'},{k:'tp3',l:'TP3'},{k:'tp4',l:'TP4'},{k:'tp5',l:'TP5'}].filter(function(t){return s[t.k]>0;});
+    var prog=tpSteps.map(function(t){return (s[t.k+'_hit']?'✅':'⬜')+t.l;}).join(' ');
     // Distância ao próximo milestone
     var prox='—';var proxCol='var(--t3)';
     if(s.livePrice&&s.entrada&&s.stop){
       var distSL=Math.abs((s.livePrice-s.stop)/s.livePrice*100);
-      var nextTP=!s.tp1_hit?s.tp1:!s.tp2_hit?s.tp2:s.tp3;
+      var nextTP=!s.tp1_hit?s.tp1:!s.tp2_hit?s.tp2:!s.tp3_hit?s.tp3:!s.tp4_hit?s.tp4:s.tp5;
       if(nextTP){
         var distTP=Math.abs((nextTP-s.livePrice)/s.livePrice*100);
         if(distSL<distTP){prox='⚠ '+distSL.toFixed(1)+'% do stop';proxCol='var(--red)';}
-        else{var nextLabel=!s.tp1_hit?'TP1':!s.tp2_hit?'TP2':'TP3';prox='→ '+distTP.toFixed(1)+'% do '+nextLabel;proxCol='var(--grn)';}
+        else{var nextLabel=!s.tp1_hit?'TP1':!s.tp2_hit?'TP2':!s.tp3_hit?'TP3':!s.tp4_hit?'TP4':'TP5';prox='→ '+distTP.toFixed(1)+'% do '+nextLabel;proxCol='var(--grn)';}
       }
     }
     h+='<div style="background:var(--bg2);border:1px solid var(--brd);border-left:3px solid '+dirCol+';border-radius:6px;padding:10px;margin-bottom:6px">';
     h+='<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-family:var(--f2);font-size:13px;font-weight:700">'+(s.par||'').replace('USDT','')+' <span style="color:'+dirCol+';font-size:10px">'+dir+'</span></div><div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-top:2px">R:R '+(s.rr||'—')+' • '+(s.estrelas||'')+'</div></div>';
     h+='<div style="text-align:right"><div style="font-family:var(--f2);font-size:11px;font-weight:600">'+(s.livePrice?f(s.livePrice):f(s.entrada))+'</div><div style="font-family:var(--f2);font-size:10px;color:'+proxCol+';margin-top:2px">'+prox+'</div></div></div>';
-    h+='<div style="font-family:var(--f2);font-size:10px;margin-top:6px;padding-top:6px;border-top:1px solid var(--brd);color:var(--t3)">'+prog+' <span style="margin-left:4px;font-size:10px">'+(s.tp2_hit?'TP2 atingido':s.tp1_hit?'TP1 atingido':'aguardando TP1')+'</span></div>';
+    h+='<div style="font-family:var(--f2);font-size:10px;margin-top:6px;padding-top:6px;border-top:1px solid var(--brd);color:var(--t3)">'+prog+'</div>';
+    if(s.stop_atual&&s.stop_atual!==s.stop){
+      h+='<div style="font-family:var(--f2);font-size:9px;color:var(--amb);margin-top:2px">🔒 Stop trail: '+(typeof s.stop_atual==='number'?s.stop_atual.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6}):s.stop_atual)+'</div>';
+    }
     h+='</div>';
   });
   el.innerHTML=h;
@@ -1823,16 +1911,12 @@ function renderRecentResults(closed){
   if(!closed.length){el.innerHTML='<div style="font-family:var(--f2);font-size:11px;color:var(--t3);text-align:center;padding:14px;background:var(--bg2);border:1px solid var(--brd);border-radius:8px">Sem trades fechados ainda</div>';return;}
   var h='';
   closed.forEach(function(s){
-    var isWin=s.status==='tp3';
-    var icon=isWin?'✅✅✅':'❌';
-    var lbl=isWin?'TP3 COMPLETO':'STOP';
-    var col=isWin?'var(--grn)':'var(--red)';
-    // Mostra quais TPs foram atingidos antes do stop
-    if(s.status==='sl'&&(s.tp1_hit||s.tp2_hit)){
-      icon=s.tp2_hit?'⚠️✅✅':'⚠️✅';
-      lbl='STOP'+(s.tp2_hit?' (pós TP2)':' (pós TP1)');
-      col='var(--amb)';
-    }
+    var isWin=s.status==='tp3'||s.status==='tp4'||s.status==='tp5'||s.status==='tp_trail'||s.status==='tp1'||s.status==='tp2';
+    var isMixed=s.status==='sl'&&(s.tp1_hit||s.tp2_hit||s.tp3_hit);
+    var isManual=s.status==='manual';
+    var lbl=s.status==='tp_trail'?'🏆 TRAIL':s.status==='tp5'?'✅ TP5':s.status==='tp4'?'✅ TP4':s.status==='tp3'?'✅ TP3':s.status==='tp2'?'✅ TP2':s.status==='tp1'?'✅ TP1':isManual?'🔐 MANUAL':isMixed?'STOP (parcial)':'STOP';
+    var icon=isWin||isManual?'✅':isMixed?'⚠️':'❌';
+    var col=isWin?'var(--grn)':isMixed||isManual?'var(--amb)':'var(--red)';
     var pct=0;
     if(s.entrada&&s.closePrice){
       pct=((s.closePrice-s.entrada)/s.entrada*100);
@@ -2012,7 +2096,7 @@ function renderPerf(){
   if(!document.getElementById('pWR'))return;
   var _set=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v};
   var ops=signals.filter(function(s){return s.direcao==='LONG'||s.direcao==='SHORT'});
-  var wins=ops.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'||s.status==='tp_trail'});
+  var wins=ops.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'||s.status==='tp4'||s.status==='tp5'||s.status==='tp_trail'||s.status==='manual'});
   var losses=ops.filter(function(s){return s.status==='sl'});
   var open=ops.filter(function(s){return!s.status||s.status==='open'});
   var closed=wins.length+losses.length;
@@ -2082,9 +2166,9 @@ function renderPerf(){
   // LONG vs SHORT
   var longs=ops.filter(function(s){return s.direcao==='LONG'});
   var shorts=ops.filter(function(s){return s.direcao==='SHORT'});
-  var longWins=longs.filter(function(s){return s.status==='tp3'}).length;
+  var longWins=longs.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'||s.status==='tp4'||s.status==='tp5'||s.status==='tp_trail'||s.status==='manual'}).length;
   var longClosed=longs.filter(function(s){return s.status&&s.status!=='open'}).length;
-  var shortWins=shorts.filter(function(s){return s.status==='tp3'}).length;
+  var shortWins=shorts.filter(function(s){return s.status==='tp1'||s.status==='tp2'||s.status==='tp3'||s.status==='tp4'||s.status==='tp5'||s.status==='tp_trail'||s.status==='manual'}).length;
   var shortClosed=shorts.filter(function(s){return s.status&&s.status!=='open'}).length;
   _set('pLongs',longs.length);
   _set('pShorts',shorts.length);
@@ -2113,7 +2197,7 @@ function renderPerf(){
     if(!pairMap[par])pairMap[par]={total:0,wins:0,closed:0,pnl:0};
     pairMap[par].total++;
     var st=s.status;
-    var isW=st==='tp1'||st==='tp2'||st==='tp3'||st==='tp_trail';
+    var isW=st==='tp1'||st==='tp2'||st==='tp3'||st==='tp4'||st==='tp5'||st==='tp_trail'||st==='manual';
     var isL=st==='sl';
     if(isW){pairMap[par].wins++;pairMap[par].closed++;}
     else if(isL){pairMap[par].closed++;}
@@ -2217,13 +2301,13 @@ function showClearModal(){
   el.style.cssText='position:fixed;inset:0;z-index:999;background:#000000cc;display:flex;align-items:flex-end;justify-content:center';
   el.innerHTML='<div style="background:var(--bg2);border:1px solid var(--brd);border-radius:16px 16px 0 0;padding:24px 20px 32px;width:100%;max-width:480px;animation:fadeUp .25s ease">'
     +'<div style="font-family:var(--f2);font-size:11px;letter-spacing:2px;color:var(--t3);text-align:center;margin-bottom:16px">GERENCIAR SINAIS</div>'
-    +'<button onclick="doClear('old')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;color:var(--t2);font-family:var(--f2);font-size:13px;cursor:pointer;text-align:left">'
+    +'<button onclick="doClear(\'old\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;color:var(--t2);font-family:var(--f2);font-size:13px;cursor:pointer;text-align:left">'
     +'🗃 Arquivar antigos <span style="color:var(--t3);font-size:11px">(+30 dias — '+closed30d+' trades)</span></button>'
-    +'<button onclick="doClear('closed')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--bg);border:1px solid var(--amb)44;border-radius:10px;color:var(--amb);font-family:var(--f2);font-size:13px;cursor:pointer;text-align:left">'
+    +'<button onclick="doClear(\'closed\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--bg);border:1px solid var(--amb)44;border-radius:10px;color:var(--amb);font-family:var(--f2);font-size:13px;cursor:pointer;text-align:left">'
     +'🧹 Limpar fechados <span style="color:var(--t3);font-size:11px">(mantém abertos)</span></button>'
-    +'<button onclick="doClear('all')" style="width:100%;padding:14px;margin-bottom:16px;background:var(--bg);border:1px solid var(--red)44;border-radius:10px;color:var(--red);font-family:var(--f2);font-size:13px;cursor:pointer;text-align:left">'
+    +'<button onclick="doClear(\'all\')" style="width:100%;padding:14px;margin-bottom:16px;background:var(--bg);border:1px solid var(--red)44;border-radius:10px;color:var(--red);font-family:var(--f2);font-size:13px;cursor:pointer;text-align:left">'
     +'💣 Limpar tudo <span style="color:var(--t3);font-size:11px">(irreversível)</span></button>'
-    +'<button onclick="document.getElementById('clearModal').style.display='none'" style="width:100%;padding:12px;background:transparent;border:1px solid var(--brd);border-radius:10px;color:var(--t3);font-family:var(--f2);font-size:13px;cursor:pointer">Cancelar</button>'
+    +'<button onclick="document.getElementById(\'clearModal\').style.display=\'none\'" style="width:100%;padding:12px;background:transparent;border:1px solid var(--brd);border-radius:10px;color:var(--t3);font-family:var(--f2);font-size:13px;cursor:pointer">Cancelar</button>'
     +'</div>';
   document.body.appendChild(el);
   el.addEventListener('click',function(e){if(e.target===el)el.style.display='none';});
@@ -2258,23 +2342,11 @@ function beep(f,d){var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.c
 
 // ── AUTO-SCAN ──
 var autoScanOn=false,autoScanTimer=null;
-var tgSignalsOn=true; // Master toggle for Telegram signals
-var lastMarketState={}; // Cache for quick check comparison
+var tgSignalsOn=true;
+var lastMarketState={};
 
-// ── INTERVALO DE SCAN (por plano) ──
-// v10.3 ALINHADO AO TF 8H — candle fecha a cada 8h, abaixo de 30min é desperdício.
-// Retorna intervalo mínimo (em horas) que o user pode escolher com o plano atual
-function getMinIntervalForUser(){
-  if(!curProfile)return 1;
-  var status=(curProfile.subscription_status||'').toString().trim().toLowerCase();
-  var plan=(curProfile.plan_type||'').toString().trim().toLowerCase();
-  if(status==='premium'){
-    if(plan.indexOf('anual')>-1||plan.indexOf('trimestr')>-1)return 0.5; // 30 min (trimestral/anual)
-    return 1; // mensal = 1h
-  }
-  return 1; // trial = 1h (aumenta chance de ver sinal no período de teste)
-}
-
+// Intervalo fixo 4h — alinhado ao TF 8H e economiza créditos Gemini
+function getMinIntervalForUser(){ return 4; }
 function getPlanLabel(){
   if(!curProfile)return 'TRIAL';
   var status=(curProfile.subscription_status||'').toString().trim().toLowerCase();
@@ -2283,77 +2355,13 @@ function getPlanLabel(){
     if(plan.indexOf('anual')>-1)return 'ANUAL';
     if(plan.indexOf('trimestr')>-1)return 'TRIMESTRAL';
     if(plan.indexOf('mensal')>-1)return 'MENSAL';
-    return 'PREMIUM'; // premium sem plan_type preenchido
+    return 'PREMIUM';
   }
   return 'TRIAL';
 }
-
-// Atualiza UI do seletor de intervalo: marca o ativo, desabilita os menores que o mínimo do plano
-function renderScanIntervalUI(){
-  if(!curProfile)return;
-  var minH=getMinIntervalForUser();
-  var curH=parseFloat(curProfile.scan_interval)||4;
-  // Se o valor salvo é menor que o mínimo do plano, força pra o mínimo
-  if(curH<minH){curH=minH;curProfile.scan_interval=minH;}
-  var planEl=document.getElementById('scanIntPlan');
-  if(planEl)planEl.textContent=getPlanLabel();
-  var hintEl=document.getElementById('scanIntHint');
-  var btns=document.querySelectorAll('.int-btn');
-  btns.forEach(function(b){
-    var bInt=parseFloat(b.getAttribute('data-int'));
-    b.classList.remove('active');
-    if(bInt<minH){
-      b.disabled=true;
-    }else{
-      b.disabled=false;
-    }
-    // Marca ativo considerando tolerância
-    if(Math.abs(bInt-curH)<0.01){b.classList.add('active');}
-  });
-  if(hintEl){
-    // Diferencia TRIAL e MENSAL (ambos min 1h) pela subscription_status real
-    var isPrem=(curProfile.subscription_status||'').toString().trim().toLowerCase()==='premium';
-    if(minH<=0.5){
-      hintEl.innerHTML='Plano <strong style="color:var(--grn)">'+getPlanLabel()+'</strong>: mínimo 30 min (alinhado ao TF 8H).';
-    }else if(isPrem){
-      hintEl.innerHTML='Plano <strong style="color:var(--grn)">MENSAL</strong>: mínimo 1h. <span style="color:var(--acc);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Upgrade pra Trimestral/Anual</span> libera 30 min.';
-    }else{
-      hintEl.innerHTML='Plano <strong style="color:var(--amb)">TRIAL</strong>: mínimo 1h (mesmo do mensal). <span style="color:var(--grn);cursor:pointer" onclick="goPage(\'cfg\',document.querySelector(\'.nav-item:nth-child(5)\'))">Assine Trimestral/Anual</span> pra liberar 30 min.';
-    }
-  }
-}
-
-function setScanInterval(hours,btn){
-  if(!curProfile||!sb||!curUser)return;
-  var minH=getMinIntervalForUser();
-  if(hours<minH){
-    toast('Intervalo bloqueado pelo seu plano — faça upgrade','inf');
-    return;
-  }
-  var prev=curProfile.scan_interval;
-  curProfile.scan_interval=hours;
-  // Salva no Supabase
-  sb.from('profiles').update({scan_interval:hours}).eq('id',curUser.id).then(function(r){
-    if(r&&r.error){
-      // Rollback + erro legível
-      curProfile.scan_interval=prev;
-      renderScanIntervalUI();
-      var em=r.error.message||'erro desconhecido';
-      if(em.indexOf('integer')>-1||em.indexOf('22P02')>-1){
-        toast('Supabase precisa migração — rode 02_FIX_SCAN_INTERVAL_TYPE.sql','err');
-      }else{
-        toast('Erro ao salvar: '+em,'err');
-      }
-      console.error('[SPECTRA] setScanInterval erro:',r.error);
-      return;
-    }
-    var label=hours<1?Math.round(hours*60)+' min':hours+'h';
-    toast('Intervalo: '+label,'ok');
-  });
-  renderScanIntervalUI();
-  // Atualiza o card do motor imediatamente pra refletir novo intervalo
-  try{updateMotorStatus();}catch(e){}
-}
+// setScanInterval desativado — intervalo fixo em 4h
+function setScanInterval(){ toast('Intervalo fixo em 4h','inf'); }
+function renderScanIntervalUI(){ /* intervalo fixo — sem UI */ }
 
 // ── STATUS PILL do topo: reflete auto-scan em tempo real ──
 function updateScanStatusPill(){
@@ -2410,7 +2418,8 @@ function toggleAutoScan(btn){
   updateScanStatusPill();
   // ── FIX v10.2: trata erro do save e faz rollback ──
   if(sb&&curUser){
-    sb.from('profiles').update({auto_scan:novoEstado}).eq('id',curUser.id).then(function(r){
+    // Sempre salva scan_interval=4 junto — garante consistência com o worker
+    sb.from('profiles').update({auto_scan:novoEstado,scan_interval:4}).eq('id',curUser.id).then(function(r){
       if(r&&r.error){
         console.error('[SPECTRA] Falha ao salvar auto_scan:',r.error);
         // ROLLBACK visual
@@ -2424,7 +2433,7 @@ function toggleAutoScan(btn){
       }else{
         toast(novoEstado?'Auto-scan ATIVADO — salvo na nuvem':'Auto-scan desativado','ok');
       }
-    }).catch?.(function(e){
+    }).catch(function(e){
       // Rede caiu
       console.error('[SPECTRA] Sem internet ao salvar auto_scan:',e);
       autoScanOn=!novoEstado;
