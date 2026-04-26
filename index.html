@@ -19,7 +19,8 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .nav{position:fixed;bottom:0;left:0;right:0;z-index:9000;display:flex;background:var(--bg2);border-top:1px solid var(--brd);padding:6px 0 max(6px,env(safe-area-inset-bottom))}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border:none;background:none;color:var(--t3);font-size:10px;font-weight:500;letter-spacing:.5px;transition:.2s}
 .nav-item.on{color:var(--acc)}
-.nav-icon{font-size:20px;line-height:1}
+.nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;line-height:1}
+.nav-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:.2s}
 .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--brd)}
 .topbar h1{font-size:16px;font-weight:800;letter-spacing:3px;background:var(--grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .topbar-r{font-family:var(--f2);font-size:10px;color:var(--t2)}
@@ -48,7 +49,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .sig-meta{display:flex;justify-content:space-between;align-items:center;font-family:var(--f2);font-size:10px;color:var(--t3)}
 .sig-rr{font-weight:600;color:var(--t1)}
 .sig-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
-.pill{font-family:var(--f2);font-size:10px;padding:3px 7px;border-radius:3px;letter-spacing:.5px}
+.pill{font-family:var(--f2);font-size:11px;padding:5px 10px;border-radius:4px;letter-spacing:.5px;font-weight:500}
 .pill-g{background:var(--grnd);color:var(--grn)}.pill-r{background:var(--redd);color:var(--red)}.pill-n{background:var(--bg);color:var(--t3)}
 .str-meter{display:flex;align-items:center;gap:6px;margin-bottom:8px}
 .str-bar{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
@@ -83,7 +84,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 /* AUTH */
 .auth-scr{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:20px}
 .auth-scr.off{display:none}
-.auth-glow{position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:400px;height:400px;background:radial-gradient(circle,#00F0FF08 0%,transparent 70%);pointer-events:none}
+.auth-glow{position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:500px;height:500px;background:radial-gradient(circle,#00F0FF22 0%,#00E67608 45%,transparent 70%);pointer-events:none}
 .auth-box{position:relative;z-index:1;width:100%;max-width:360px}
 .auth-logo{text-align:center;margin-bottom:32px}
 .auth-logo h2{font-size:32px;font-weight:800;letter-spacing:6px;background:var(--grd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
@@ -102,7 +103,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 .exp-scr.on{display:flex}
 /* PILLAR ANIMATION */
 .scan-anim{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;margin-bottom:12px;display:none}
-.scan-anim.on{display:block}
+.scan-anim.on{display:block;animation:borderPulse 1.5s ease-in-out infinite}
 .scan-pillar{display:flex;align-items:center;gap:8px;padding:6px 0;font-family:var(--f2);font-size:11px;color:var(--t3);transition:all .3s}
 .scan-pillar.active{color:var(--acc)}
 .scan-pillar.done{color:var(--grn)}
@@ -114,6 +115,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
 @keyframes scanPulse{0%,100%{background:var(--bg);border-color:var(--brd)}50%{background:var(--accd);border-color:var(--acc)}}
 @keyframes scanSweep{0%{box-shadow:0 0 0 0 rgba(0,230,118,.6)}100%{box-shadow:0 0 0 8px rgba(0,230,118,0)}}
+@keyframes borderPulse{0%,100%{border-color:var(--brd)}50%{border-color:var(--acc);box-shadow:0 0 0 3px var(--accd)}}
 .pair-chip{font-family:var(--f2);font-size:10px;padding:4px 9px;border-radius:12px;background:var(--bg);border:1px solid var(--brd);color:var(--t2);letter-spacing:.3px;transition:all .3s}
 .pair-chip.scanning{animation:scanPulse 1.5s ease-in-out infinite,scanSweep 1.5s ease-out infinite;color:var(--acc);font-weight:600}
 .pair-chip.scanned{background:var(--grnd);border-color:var(--grn);color:var(--grn);font-weight:600}
@@ -163,9 +165,13 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
   <div id="expInfo" style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-bottom:20px"></div>
   <div style="background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:18px;width:100%;max-width:340px;margin-bottom:14px">
     <div style="font-family:var(--f2);font-size:10px;color:var(--acc);letter-spacing:2px;text-align:center;margin-bottom:10px">PLANOS</div>
-    <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;margin-bottom:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--t2)">Mensal</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--grn)">R$ 97</span></div>
-    <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg);border:1px solid var(--amb);border-radius:6px;margin-bottom:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--amb)">Trimestral</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--amb)">R$ 247</span></div>
-    <div style="display:flex;justify-content:space-between;padding:10px;background:var(--bg);border:1px solid var(--grn);border-radius:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--grn)">Anual</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--grn)">R$ 797</span></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;margin-bottom:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--t2)">Mensal</span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--grn)">R$ 97</span></div>
+    <div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:12px 10px;background:var(--ambd);border:2px solid var(--amb);border-radius:8px;margin-bottom:6px">
+      <span style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-family:var(--f2);font-size:9px;font-weight:700;color:#000;background:var(--amb);padding:2px 10px;border-radius:10px;white-space:nowrap;letter-spacing:.5px">★ MELHOR CUSTO</span>
+      <span style="font-family:var(--f2);font-size:13px;color:var(--amb);font-weight:600">Trimestral <span style="font-size:10px;opacity:.7">(-15%)</span></span>
+      <span style="font-family:var(--f2);font-size:16px;font-weight:800;color:var(--amb)">R$ 247</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg);border:1px solid var(--grn);border-radius:6px"><span style="font-family:var(--f2);font-size:12px;color:var(--grn)">Anual <span style="font-size:9px;opacity:.7">(-31%)</span></span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--grn)">R$ 797</span></div>
   </div>
   <div style="background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;width:100%;max-width:340px;margin-bottom:14px;text-align:center">
     <div style="font-family:var(--f2);font-size:10px;color:var(--acc);letter-spacing:2px;margin-bottom:8px">PIX</div>
@@ -287,7 +293,10 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
           <div style="font-family:var(--f2);font-size:10px;color:var(--t2)">
             <span style="color:var(--t3)">Sinais 24h:</span> <span id="motor24h" style="color:var(--grn);font-weight:600">0</span>
           </div>
-          <button onclick="goPage('alert',document.querySelector('.nav-item:nth-child(4)'))" style="padding:4px 10px;background:transparent;border:1px solid var(--acc);border-radius:12px;color:var(--acc);font-family:var(--f2);font-size:9px;cursor:pointer;letter-spacing:1px">CONFIGURAR</button>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:var(--f2);font-size:9px;color:var(--t3)">AUTO-SCAN</span>
+            <button id="dashAutoScan" class="al-toggle" onclick="toggleAutoScanDash(this)"></button>
+          </div>
         </div>
       </div>
 
@@ -323,7 +332,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
 
       <!-- SINAL MAIS FORTE ABERTO -->
       <div class="sec">🔥 SINAL MAIS FORTE ABERTO</div>
-      <div id="dashStrongest"><div class="empty" style="padding:18px"><div class="empty-icon">📡</div><div class="empty-text">Nenhum sinal ativo.<br>Vá em <strong>Sinais</strong> para analisar.</div></div></div>
+      <div id="dashStrongest"><div style="background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:20px;text-align:center"><div style="font-size:28px;margin-bottom:8px;opacity:.6">📡</div><div style="font-family:var(--f2);font-size:13px;color:var(--t2);margin-bottom:12px;line-height:1.6">Nenhum setup de alta confluência no momento.</div><button onclick="goPage('sig',document.querySelector('.nav-item:nth-child(2)'))" style="padding:10px 22px;background:var(--grd);border:none;border-radius:8px;color:#000;font-family:var(--f1);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer">⚡ ANALISAR AGORA</button></div></div>
 
       <!-- SINAIS ABERTOS AGORA -->
       <div class="sec" style="margin-top:14px">⏳ MONITORANDO AGORA (<span id="dOpenCount">0</span>)</div>
@@ -357,7 +366,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
         <div style="font-family:var(--f2);font-size:10px;color:var(--acc);letter-spacing:2px;margin-bottom:8px;text-align:center">ANALISANDO 7 PILARES</div>
         <div class="scan-pillar" id="sp-0"><div class="scan-dot"></div>Elliott Wave</div>
         <div class="scan-pillar" id="sp-1"><div class="scan-dot"></div>Fibonacci</div>
-        <div class="scan-pillar" id="sp-2"><div class="scan-dot"></div>MACD 12/72/35</div>
+        <div class="scan-pillar" id="sp-2"><div class="scan-dot"></div>MACD 7/72/21</div>
         <div class="scan-pillar" id="sp-3"><div class="scan-dot"></div>Dow Theory</div>
         <div class="scan-pillar" id="sp-4"><div class="scan-dot"></div>Wyckoff</div>
         <div class="scan-pillar" id="sp-5"><div class="scan-dot"></div>Gann</div>
@@ -400,10 +409,13 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
       <!-- EVOLUÇÃO (canvas) -->
       <div class="card" style="margin-bottom:10px;padding:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span class="label" style="margin:0">EVOLUÇÃO</span>
-          <span style="font-family:var(--f2);font-size:10px;color:var(--t3)" id="pPnl">—</span>
+          <span class="label" style="margin:0">CURVA DE EQUITY</span>
+          <div style="text-align:right">
+            <div id="pPnl" style="font-family:var(--f2);font-size:18px;font-weight:700;color:var(--t3)">—</div>
+            <div style="font-family:var(--f2);font-size:9px;color:var(--t3);letter-spacing:1px">RESULTADO ACUMULADO</div>
+          </div>
         </div>
-        <canvas id="pChart" style="width:100%;height:80px"></canvas>
+        <canvas id="pChart" style="width:100%;height:120px"></canvas>
       </div>
 
       <!-- LONG vs SHORT -->
@@ -457,6 +469,7 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
           <span style="text-align:center">⚖️ Moderado<br><span style="color:var(--t3)">4+ pilares, ★★★+</span></span>
           <span style="text-align:right">⚡ Agressivo<br><span style="color:var(--t3)">3+ pilares, ★★+</span></span>
         </div>
+        <div id="riskDesc" style="font-family:var(--f2);font-size:11px;color:var(--t2);margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:6px;line-height:1.5">Exige 4+ pilares. Sinais diários, boa relação risco/retorno. Recomendado para a maioria dos operadores.</div>
       </div>
       <!-- AUTO-SCAN + TELEGRAM -->
       <div class="card" style="border-color:var(--acc);margin-bottom:14px">
@@ -513,7 +526,10 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;margin:10px 0">
           <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--brd);border-radius:6px"><span style="font-family:var(--f2);font-size:11px;color:var(--t2)">Mensal</span><span style="font-family:var(--f2);font-size:13px;font-weight:700;color:var(--t1)">R$ 97</span></div>
-          <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--amb);border-radius:6px"><span style="font-family:var(--f2);font-size:11px;color:var(--amb)">Trimestral <span style="font-size:9px;color:var(--t3)">(-15%)</span></span><span style="font-family:var(--f2);font-size:13px;font-weight:700;color:var(--amb)">R$ 247</span></div>
+          <div style="position:relative;display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--ambd);border:2px solid var(--amb);border-radius:8px;margin-top:2px">
+            <span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-family:var(--f2);font-size:8px;font-weight:700;color:#000;background:var(--amb);padding:2px 8px;border-radius:8px;white-space:nowrap">★ MELHOR CUSTO</span>
+            <span style="font-family:var(--f2);font-size:11px;color:var(--amb);font-weight:600">Trimestral <span style="font-size:9px;color:var(--t3)">(-15%)</span></span><span style="font-family:var(--f2);font-size:14px;font-weight:700;color:var(--amb)">R$ 247</span>
+          </div>
           <div style="display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--grn);border-radius:6px"><span style="font-family:var(--f2);font-size:11px;color:var(--grn)">Anual <span style="font-size:9px;color:var(--t3)">(-31%)</span></span><span style="font-family:var(--f2);font-size:13px;font-weight:700;color:var(--grn)">R$ 797</span></div>
         </div>
         <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:10px;text-align:center;margin-bottom:8px">
@@ -534,12 +550,16 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
       <div class="sec">TELEGRAM</div>
       <div class="acc-card">
         <div style="font-family:var(--f2);font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:10px">Receba sinais direto no seu Telegram quando o auto-scan encontrar oportunidades.</div>
-        <div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-bottom:8px;line-height:1.6">
-          <strong style="color:var(--acc)">Como configurar:</strong><br>
-          1. Abra o Telegram e busque <strong style="color:var(--t1)">@especulador_sinais_bot</strong><br>
-          2. Envie <strong style="color:var(--t1)">/start</strong> — o bot responde com seu Chat ID<br>
-          3. Copie o número (só dígitos) e cole abaixo<br>
-          4. Clique SALVAR e depois TESTAR
+        <a href="https://t.me/especulador_sinais_bot" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:8px;background:#229ED922;border:1px solid #229ED966;color:#229ED9;text-decoration:none;font-family:var(--f2);font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:12px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          ABRIR @especulador_sinais_bot
+        </a>
+        <div style="font-family:var(--f2);font-size:10px;color:var(--t3);margin-bottom:10px;line-height:1.6">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg);border-radius:6px;border-left:2px solid var(--grn)"><span style="font-size:16px;flex-shrink:0">1</span><span>Abra o botão acima e envie <strong style="color:var(--t1)">/start</strong> para o bot</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg);border-radius:6px;border-left:2px solid var(--acc)"><span style="font-size:16px;flex-shrink:0">2</span><span>O bot responde com um número — copie apenas os dígitos</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg);border-radius:6px;border-left:2px solid var(--amb)"><span style="font-size:16px;flex-shrink:0">3</span><span>Cole o número abaixo e clique <strong style="color:var(--t1)">SALVAR</strong></span></div>
+          </div>
         </div>
         <input class="key-input" type="text" inputmode="numeric" pattern="[0-9]*" id="tgChatInput" placeholder="Seu Chat ID (ex: 498906623)" style="margin-bottom:8px">
         <div style="display:flex;gap:6px">
@@ -565,11 +585,11 @@ button{font-family:var(--f1);cursor:pointer}input{font-family:var(--f2)}
     </div>
   </div>
   <nav class="nav">
-    <button class="nav-item on" onclick="goPage('dash',this)"><span class="nav-icon">📊</span>Início</button>
-    <button class="nav-item" onclick="goPage('sig',this)"><span class="nav-icon">⚡</span>Sinais</button>
-    <button class="nav-item" onclick="goPage('res',this)"><span class="nav-icon">📈</span>Resultados</button>
-    <button class="nav-item" onclick="goPage('alert',this)"><span class="nav-icon">🔔</span>Alertas</button>
-    <button class="nav-item" onclick="goPage('cfg',this)"><span class="nav-icon">⚙️</span>Config</button>
+    <button class="nav-item on" onclick="goPage('dash',this)"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Início</button>
+    <button class="nav-item" onclick="goPage('sig',this)"><span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/></svg></span>Sinais</button>
+    <button class="nav-item" onclick="goPage('res',this)"><span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg></span>Resultados</button>
+    <button class="nav-item" onclick="goPage('alert',this)"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 2a10 10 0 0 1 10 10"/><path d="M12 2a10 10 0 0 0-10 10"/><path d="M12 22a10 10 0 0 1-10-10"/><path d="M12 22a10 10 0 0 0 10-10"/><circle cx="12" cy="12" r="6"/></svg></span>Monitor</button>
+    <button class="nav-item" onclick="goPage('cfg',this)"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Config</button>
   </nav>
 </div>
 <div class="toast" id="toast"></div>
@@ -686,7 +706,7 @@ function showApp(){
     var endMs=tStart.getTime()+trialDays*86400000;
     var daysLeft=Math.max(0,Math.ceil((endMs-Date.now())/86400000));
     var badge=document.getElementById('planBadge');if(badge){badge.textContent=isPrem?'PREMIUM':'TRIAL';badge.style.background=isPrem?'var(--grnd)':'var(--accd)';badge.style.borderColor=isPrem?'var(--grn)':'var(--acc)';badge.style.color=isPrem?'var(--grn)':'var(--acc)';}
-    if(!isPrem){document.getElementById('topInfo').textContent=daysLeft+'d restantes';}
+    if(!isPrem){document.getElementById('topInfo').textContent='7 Pilares • IA';}
     else document.getElementById('topInfo').textContent='∞';
     var ae=document.getElementById('accEmail');if(ae)ae.textContent=curProfile.email;
     var ab=document.getElementById('accBadge');if(ab)ab.innerHTML=isPrem?'<span style="font-family:var(--f2);font-size:10px;padding:3px 10px;border-radius:4px;background:var(--grnd);color:var(--grn);border:1px solid var(--grn)">★ PREMIUM</span>':'<span style="font-family:var(--f2);font-size:10px;padding:3px 10px;border-radius:4px;background:var(--accd);color:var(--acc);border:1px solid var(--acc)">TRIAL</span>';
@@ -752,24 +772,29 @@ function showApp(){
 (async function(){try{if(!sb)return;var s=await sb.auth.getSession();if(s.data.session){curUser=s.data.session.user;checkAccess();}sb.auth.onAuthStateChange(function(ev,s){if(s){curUser=s.user;}else{curUser=null;showAuth();}});}catch(e){console.error('[SPECTRA] Auth init error:',e)}})();
 
 // ── PILLAR ANIMATION ──
-var pillarNames=['Elliott Wave','Fibonacci','MACD 12/72/35','Dow Theory','Wyckoff','Gann','Price Action'];
+var pillarNames=['Elliott Wave','Fibonacci','MACD 7/72/21','Dow Theory','Wyckoff','Gann','Price Action'];
 var scanAnimTimer=null;
 function startPillarAnim(){
   var el=document.getElementById('scanAnim');if(!el)return;
   el.classList.add('on');
-  for(var i=0;i<7;i++){var p=document.getElementById('sp-'+i);if(p){p.className='scan-pillar';p.innerHTML='<div class="scan-dot"></div>'+pillarNames[i];}}
+  for(var i=0;i<7;i++){var p=document.getElementById('sp-'+i);if(p){p.className='scan-pillar';p.innerHTML='<div class="scan-dot"></div><span>'+pillarNames[i]+'</span>';}}
   var idx=0;
   if(scanAnimTimer)clearInterval(scanAnimTimer);
   scanAnimTimer=setInterval(function(){
-    for(var j=0;j<7;j++){var p=document.getElementById('sp-'+j);if(p){if(j<idx)p.className='scan-pillar done';else if(j===idx)p.className='scan-pillar active';else p.className='scan-pillar';}}
+    for(var j=0;j<7;j++){var p=document.getElementById('sp-'+j);if(p){
+      if(j<idx){p.className='scan-pillar done';if(!p.querySelector('.pill-result')){var sp=document.createElement('span');sp.className='pill-result';sp.style.cssText='font-size:9px;padding:1px 5px;border-radius:3px;margin-left:auto;background:var(--grnd);color:var(--grn)';sp.textContent='✓';p.appendChild(sp);}}
+      else if(j===idx){p.className='scan-pillar active';}
+      else{p.className='scan-pillar';}
+    }}
     idx++;if(idx>7){idx=0;}
   },600);
 }
 function stopPillarAnim(result){
   if(scanAnimTimer){clearInterval(scanAnimTimer);scanAnimTimer=null;}
-  // Mark all as done
-  for(var i=0;i<7;i++){var p=document.getElementById('sp-'+i);if(p)p.className='scan-pillar done';}
-  setTimeout(function(){var el=document.getElementById('scanAnim');if(el)el.classList.remove('on')},1500);
+  var el=document.getElementById('scanAnim');
+  if(el){el.style.animation='none';el.style.borderColor='var(--grn)';el.style.boxShadow='0 0 0 2px var(--grng)';}
+  for(var i=0;i<7;i++){var p=document.getElementById('sp-'+i);if(p){p.className='scan-pillar done';if(!p.querySelector('.pill-result')){var sp=document.createElement('span');sp.className='pill-result';sp.style.cssText='font-size:9px;padding:1px 5px;border-radius:3px;margin-left:auto;background:var(--grnd);color:var(--grn)';sp.textContent='✓';p.appendChild(sp);}}}
+  setTimeout(function(){if(el){el.style.borderColor='';el.style.boxShadow='';el.classList.remove('on');}},2000);
 }
 
 // ── CONFIG ──
@@ -1042,12 +1067,12 @@ async function fetchMarketData(symbol,interval){
   var cd=kd.map(function(k){return+k[4]}),hd=kd.map(function(k){return+k[2]}),ld=kd.map(function(k){return+k[3]});
   var p=c[c.length-1],dec=p<1?6:p<100?4:2;
 
-  // ═══ MACD 12/72/35 DIÁRIO (GATE) — Config: EMA12, EMA72, Signal EMA35 ═══
-  var e12d=calcEMA(cd,12),e72d=calcEMA(cd,72);
-  // MACD Line = EMA12 - EMA72
+  // ═══ MACD 7/72/21 DIÁRIO (GATE) — Config: EMA7, EMA72, Signal EMA21 ═══
+  var e12d=calcEMA(cd,7),e72d=calcEMA(cd,72);
+  // MACD Line = EMA7 - EMA72
   var macdLineD=[];for(var i=0;i<e12d.length;i++)macdLineD.push(e12d[i]-e72d[i]);
-  // Signal Line = EMA35 do MACD Line
-  var signalD=calcEMA(macdLineD,35);
+  // Signal Line = EMA21 do MACD Line
+  var signalD=calcEMA(macdLineD,21);
   // Histograma = MACD Line - Signal Line
   var histD=macdLineD[macdLineD.length-1]-signalD[signalD.length-1];
   var histDp=macdLineD[macdLineD.length-2]-signalD[signalD.length-2];
@@ -1057,14 +1082,14 @@ async function fetchMarketData(symbol,interval){
   var macdGate=mgD>0?'BULLISH':'BEARISH';
   // Cruzamento MACD Line vs Signal Line
   var macdCrossD=(mgD>sigD&&mgDp<=signalD[signalD.length-2])?'BULL CROSS RECENTE (MACD acima Signal)':(mgD<sigD&&mgDp>=signalD[signalD.length-2])?'BEAR CROSS RECENTE (MACD abaixo Signal)':'MANTIDO';
-  // Cruzamento MACD Line vs Zero (EMA12 vs EMA72)
-  var macdZeroD=(mgD>0&&mgDp<=0)?'CRUZOU ZERO ↑ (EMA12 acima EMA72)':(mgD<0&&mgDp>=0)?'CRUZOU ZERO ↓ (EMA12 abaixo EMA72)':'—';
+  // Cruzamento MACD Line vs Zero (EMA7 vs EMA72)
+  var macdZeroD=(mgD>0&&mgDp<=0)?'CRUZOU ZERO ↑ (EMA7 acima EMA72)':(mgD<0&&mgDp>=0)?'CRUZOU ZERO ↓ (EMA7 abaixo EMA72)':'—';
   var histTrendD=Math.abs(histD)>Math.abs(histDp)?'CRESCENDO':'DIMINUINDO';
 
-  // ═══ MACD 12/72/35 TIMEFRAME OPERACIONAL ═══
-  var e12tf=calcEMA(c,12),e72tf=calcEMA(c,72);
+  // ═══ MACD 7/72/21 TIMEFRAME OPERACIONAL ═══
+  var e12tf=calcEMA(c,7),e72tf=calcEMA(c,72);
   var macdLineTF=[];for(var i=0;i<e12tf.length;i++)macdLineTF.push(e12tf[i]-e72tf[i]);
-  var signalTF=calcEMA(macdLineTF,35);
+  var signalTF=calcEMA(macdLineTF,21);
   var histTF=macdLineTF[macdLineTF.length-1]-signalTF[signalTF.length-1];
   var histTFp=macdLineTF[macdLineTF.length-2]-signalTF[signalTF.length-2];
   var mgTF=macdLineTF[macdLineTF.length-1];
@@ -1149,9 +1174,9 @@ async function fetchMarketData(symbol,interval){
 
   return{
     price:p.toFixed(dec),
-    // MACD 12/72/35 DIÁRIO
+    // MACD 7/72/21 DIÁRIO
     macdGate:macdGate,macdCrossD:macdCrossD,macdZeroD:macdZeroD,e12d:e12d[e12d.length-1].toFixed(dec),e72d:e72d[e72d.length-1].toFixed(dec),macdLineD:mgD.toFixed(dec),signalLineD:sigD.toFixed(dec),histD:histD.toFixed(dec),histTrendD:histTrendD,
-    // MACD 12/72/35 TIMEFRAME
+    // MACD 7/72/21 TIMEFRAME
     macdTF:macdTF,macdCrossTF:macdCrossTF,macdZeroTF:macdZeroTF,e12tf:e12tf[e12tf.length-1].toFixed(dec),e72tf:e72tf[e72tf.length-1].toFixed(dec),macdLineTF:mgTF.toFixed(dec),signalLineTF:sigTF.toFixed(dec),histTF:histTF.toFixed(dec),histTrendTF:histTrendTF,
     // FALHA DE CRUZAMENTO MACD (gatilho antecipado)
     macdFailD:macdFailD.type,macdFailDescD:macdFailD.desc,macdFailBarsD:macdFailD.barsAgo,macdFailZonaD:macdFailD.zona||'—',macdFailForcaD:macdFailD.forca||'—',
@@ -1181,9 +1206,9 @@ const SYSTEM_PROMPT=`Você é o SPEC MIND — a mente coletiva dos maiores espec
 
 LEGADO: Livermore (timing, ponto de menor resistência), Wyckoff (smart money, acumulação/distribuição), Gann (ciclos preço-tempo), Elliott (fractais, ondas), Dow (tendência, topos/fundos), Al Brooks (price action), Larry Williams (gestão de risco, R:R).
 
-═══ MACD DUPLO 12/72/35 ═══
-Config FIXA: Curto=12 | Lento=72 | Signal=35 | EMA | Fechamento | Aguardar fechamento candle.
-DIF = EMA(12)-EMA(72). DEA = EMA(35) da DIF. Histograma = DIF-DEA.
+═══ MACD DUPLO 7/72/21 ═══
+Config FIXA: Curto=7 | Lento=72 | Signal=21 | EMA | Fechamento | Aguardar fechamento candle.
+DIF = EMA(7)-EMA(72). DEA = EMA(21) da DIF. Histograma = DIF-DEA.
 DIF e DEA são do INDICADOR. EMA72/DEMA72 no PREÇO = confluência S/R. Coisas diferentes.
 
 ═══ FIBONACCI — ESCALA LOGARÍTMICA OBRIGATÓRIA ═══
@@ -1218,7 +1243,7 @@ TIMING OBRIGATÓRIO: Se preço fora da Golden Zone: "Operador, timing ideal era 
 - Para LONG: Se GZ nos dados = "NÃO" (preço acima da zona) → veredicto OBRIGATÓRIO "AGUARDAR". Sem entrada LONG fora da Golden Zone.
 - Para SHORT: GZ "NÃO" é esperado (preço abaixo). Valide stop ACIMA da entrada e TPs ABAIXO.
 
-7 PILARES: 1)ELLIOTT 2)FIBONACCI(LOG) 3)MACD 12/72/35 4)DOW 5)WYCKOFF 6)GANN 7)PRICE ACTION
+7 PILARES: 1)ELLIOTT 2)FIBONACCI(LOG) 3)MACD 7/72/21 4)DOW 5)WYCKOFF 6)GANN 7)PRICE ACTION
 COMPLEMENTARES: DEMA72=S/R. VPFR=VAH/POC/VAL. Tudo em LOG.
 CONFLUÊNCIA: ★★★★★(6-7) ★★★★(5) ★★★(4) ★★(3) ★(1-2). Mín ★★★ pra operar.
 
@@ -1231,7 +1256,7 @@ REGRAS DE FORMATO CRÍTICAS:
 - R:R calculado como abs(tp1-entrada)/abs(stop-entrada). Se < 3:1 → AGUARDAR.
 - Se a narrativa mencionar "aguardar", "esperar pullback", "timing passou" → veredicto DEVE ser AGUARDAR, NUNCA OPERAR.
 
-Modelo: {"ativo":"PAR","direcao_dominante":"COMPRADOR|VENDEDOR|LATERAL","probabilidades":{"comprador":0,"vendedor":0,"lateral":0},"confluencia":{"total_favoraveis":0,"total_pilares":7,"classificacao":"★★(N)","fase":"RASTREAMENTO|ZONA DE VALOR|GATILHO|EXECUÇÃO","pilares":{"elliott":{"score":0,"direcao":"","analise":""},"fibonacci":{"score":0,"direcao":"","analise":""},"macd_12_72":{"score":0,"direcao":"","analise":""},"dow":{"score":0,"direcao":"","analise":""},"wyckoff":{"score":0,"direcao":"","analise":""},"gann":{"score":0,"direcao":"","analise":""},"price_action":{"score":0,"direcao":"","analise":""}}},"indicadores_complementares":{"macd_falha_cruzamento":{"tipo":"","descricao":"","classificacao":"ALTA PROBABILIDADE|PROBABILIDADE MODERADA|BAIXA CONFLUÊNCIA"},"dema_72":{"valor":0,"status":"","confirmacao":""},"volume_profile":{"vah":0,"poc":0,"val":0}},"gestao_risco":{"entrada_sugerida":0,"stop_loss":0,"alvo_1":0,"alvo_2":0,"alvo_3":0,"rr_ratio":"","valido":true},"veredicto":"OPERAR|AGUARDAR","narrativa":""}`;
+Modelo: {"ativo":"PAR","direcao_dominante":"COMPRADOR|VENDEDOR|LATERAL","probabilidades":{"comprador":0,"vendedor":0,"lateral":0},"confluencia":{"total_favoraveis":0,"total_pilares":7,"classificacao":"★★(N)","fase":"RASTREAMENTO|ZONA DE VALOR|GATILHO|EXECUÇÃO","pilares":{"elliott":{"score":0,"direcao":"","analise":""},"fibonacci":{"score":0,"direcao":"","analise":""},"macd_7_72":{"score":0,"direcao":"","analise":""},"dow":{"score":0,"direcao":"","analise":""},"wyckoff":{"score":0,"direcao":"","analise":""},"gann":{"score":0,"direcao":"","analise":""},"price_action":{"score":0,"direcao":"","analise":""}}},"indicadores_complementares":{"macd_falha_cruzamento":{"tipo":"","descricao":"","classificacao":"ALTA PROBABILIDADE|PROBABILIDADE MODERADA|BAIXA CONFLUÊNCIA"},"dema_72":{"valor":0,"status":"","confirmacao":""},"volume_profile":{"vah":0,"poc":0,"val":0}},"gestao_risco":{"entrada_sugerida":0,"stop_loss":0,"alvo_1":0,"alvo_2":0,"alvo_3":0,"rr_ratio":"","valido":true},"veredicto":"OPERAR|AGUARDAR","narrativa":""}`;
 
 
 // ── PARES ──
@@ -1349,7 +1374,7 @@ function mapSignal(raw,pair){
     var fav=c.total_favoraveis||0,tot=c.total_pilares||7;
     var forca=Math.round(fav/tot*100);
     var pillMap={};
-    if(c.pilares){var names={elliott:'Elliott',fibonacci:'Fibo',macd_12_72:'MACD',dow:'Dow',wyckoff:'Wyckoff',gann:'Gann',price_action:'PA'};for(var k in c.pilares){var pi=c.pilares[k];var d=pi.direcao||'';var icon=d.indexOf('COMPRADOR')>-1?'▲':d.indexOf('VENDEDOR')>-1?'▼':'◆';pillMap[names[k]||k]=icon+' '+(pi.analise||d).substring(0,30);}}
+    if(c.pilares){var names={elliott:'Elliott',fibonacci:'Fibo',macd_7_72:'MACD',dow:'Dow',wyckoff:'Wyckoff',gann:'Gann',price_action:'PA'};for(var k in c.pilares){var pi=c.pilares[k];var d=pi.direcao||'';var icon=d.indexOf('COMPRADOR')>-1?'▲':d.indexOf('VENDEDOR')>-1?'▼':'◆';pillMap[names[k]||k]=icon+' '+(pi.analise||d).substring(0,30);}}
     var rrStrRaw=g.rr_ratio||'—';
     // ── Validação: sinal operável precisa de entrada, stop e tp1 válidos ──
     var entrada=parseFloat(g.entrada_sugerida)||0;
@@ -1365,6 +1390,17 @@ function mapSignal(raw,pair){
       direcao='AGUARDAR';
       raw.veredicto='AGUARDAR';
       raw.narrativa=(raw.narrativa||'')+' Apenas '+fav+' pilares — confluência insuficiente.';
+    }
+    // ── NÍVEL DE RISCO: respeita min_pillars do usuário (igual ao Worker) ──
+    if(direcao!=='AGUARDAR'){
+      var minPil=parseInt(curProfile&&curProfile.min_pillars)||3;
+      var minForca=Math.round(minPil/7*100);
+      if(forca<minForca){
+        direcao='AGUARDAR';
+        raw.veredicto='AGUARDAR';
+        var riskNames={5:'Conservador',4:'Moderado',3:'Agressivo'};
+        raw.narrativa=(raw.narrativa||'')+' '+fav+'/7 pilares — abaixo do mínimo para seu nível '+(riskNames[minPil]||minPil+' pilares')+'.';
+      }
     }
     // ── BUG 3: SHORT com TP acima da entrada = inválido (e vice-versa) ──
     if(direcao==='SHORT'&&tp1>0&&entrada>0&&tp1>entrada){
@@ -1548,7 +1584,9 @@ function renderSignals(){
     if(s.status==='expired')h+='<span style="font-family:var(--f2);font-size:10px;padding:2px 8px;border-radius:4px;background:var(--ambd);color:var(--amb)">⏰ EXPIRADO</span>';
     h+='</div></div>';
     // Barra de força
-    h+='<div class="str-meter" style="margin:0 14px 8px"><div class="str-label">CONFLUÊNCIA</div><div class="str-bar"><div class="str-fill" style="width:'+forca+'%;background:'+fCor+'"></div></div><div class="str-pct" style="color:'+fCor+'">'+(s.estrelas||'—')+'</div></div>';
+    var forcaLabel=forca>=80?'EXCEPCIONAL':forca>=65?'FORTE':forca>=50?'MODERADO':'FRACO';
+    var forcaLabelCor=forca>=80?'var(--acc)':forca>=65?'var(--grn)':forca>=50?'var(--amb)':'var(--red)';
+    h+='<div class="str-meter" style="margin:0 14px 8px"><div class="str-label">CONFLUÊNCIA</div><div class="str-bar"><div class="str-fill" style="width:'+forca+'%;background:'+fCor+'"></div></div><div class="str-pct" style="color:'+fCor+'">'+(s.estrelas||'—')+'</div><span style="font-family:var(--f2);font-size:9px;font-weight:700;color:'+forcaLabelCor+';letter-spacing:.5px;white-space:nowrap">'+forcaLabel+'</span></div>';
     // Regiões de alvo (Fibo LOG)
     var reg1=s.regTP1,reg2=s.regTP2,reg3=s.regTP3;
     var fReg=function(r){if(!r||!r[0]||!r[1])return'—';return f(r[0])+' — '+f(r[1])};
@@ -1617,6 +1655,7 @@ function renderSignals(){
     h+='</div>';
     var sidx=signals.indexOf(s);
     h+='<div style="padding:0 14px 14px;display:flex;gap:8px">';
+    h+='<button onclick="copiarSinal('+sidx+')" style="flex:1;padding:10px;background:var(--bg);border:1px solid var(--acc)44;border-radius:8px;color:var(--acc);font-family:var(--f2);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer" onmouseover="this.style.background=\'var(--accd)\'" onmouseout="this.style.background=\'var(--bg)\'">📋 COPIAR</button>';
     h+='<button onclick="sendSinalTelegram('+sidx+')" style="flex:1;padding:10px;background:var(--bg);border:1px solid #229ED944;border-radius:8px;color:#229ED9;font-family:var(--f2);font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer" onmouseover="this.style.background=\'#229ED922\'" onmouseout="this.style.background=\'var(--bg)\'">📤 TELEGRAM</button>';
     if(s.status==='open'){
       h+='<button onclick="fecharTrade(\''+escId(s.id)+'\')" style="padding:10px 14px;background:var(--bg);border:1px solid var(--red)44;border-radius:8px;color:var(--red);font-family:var(--f2);font-size:12px;font-weight:700;cursor:pointer" onmouseover="this.style.background=\'var(--redd)\'" onmouseout="this.style.background=\'var(--bg)\'">🔐 FECHAR</button>';
@@ -1627,6 +1666,27 @@ function renderSignals(){
   document.getElementById('sigList').innerHTML=h;
 }
 function escId(id){return(id||'').replace(/['"]/g,'');}
+function copiarSinal(idx){
+  var s=signals[idx];if(!s){toast('Sinal não encontrado','err');return;}
+  var f=function(v){return(!v||v===0)?'—':Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:6});};
+  var nome=(s.par||'').replace('USDT','');
+  var dir=s.direcao==='LONG'?'▲ LONG':s.direcao==='SHORT'?'▼ SHORT':'◆ AGUARDAR';
+  var texto=[
+    'SPECTRA · '+nome+'/USDT',
+    dir+' '+( s.estrelas||''),
+    '─────────────────',
+    'Entrada : '+f(s.entrada),
+    'Stop    : '+f(s.stop),
+    'TP1     : '+f(s.tp1),
+    s.tp2?'TP2     : '+f(s.tp2):'',
+    s.tp3?'TP3     : '+f(s.tp3):'',
+    'R:R     : '+( s.rr||'—'),
+    'Força   : '+(s.forca||'—')+'%',
+    '─────────────────',
+    new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+  ].filter(Boolean).join('\n');
+  navigator.clipboard.writeText(texto).then(function(){toast('✅ Sinal copiado!','ok');}).catch(function(){toast('Erro ao copiar','err');});
+}
 function fecharTrade(signalId){
   if(!signalId){toast('ID do trade não encontrado','err');return;}
   var sig=signals.find(function(s){return s&&s.id===signalId;});
@@ -1677,7 +1737,7 @@ function sendSinalTelegram(idx){
   msg+='📊 R:R: <code>'+(s.rr||'—')+'</code>\n\n';
   if(s.pilares&&typeof s.pilares==='object'){
     // FIX v14: pilares compactos — só mostra score>=30, sem analise verbosa
-    var pN={elliott:'Elliott',fibonacci:'Fibo LOG',macd_12_72:'MACD',dow:'Dow',wyckoff:'Wyckoff',gann:'Gann',price_action:'P.Action'};
+    var pN={elliott:'Elliott',fibonacci:'Fibo LOG',macd_7_72:'MACD',dow:'Dow',wyckoff:'Wyckoff',gann:'Gann',price_action:'P.Action'};
     var pilList=Object.keys(pN).map(function(k){var p=s.pilares[k]||{};var sc=p.score||0;var pd=(p.direcao||'').toUpperCase();var ic=pd.indexOf('COMPRA')>-1?'▲':pd.indexOf('VENDA')>-1?'▼':'·';return{k:k,name:pN[k],sc:sc,icon:ic};});
     var compra=pilList.filter(function(p){return p.icon==='▲';}).length;
     var venda=pilList.filter(function(p){return p.icon==='▼';}).length;
@@ -1704,8 +1764,15 @@ function setRiskLevel(val){
   val=parseInt(val)||2;
   var labels={1:'🛡 Conservador',2:'⚖️ Moderado',3:'⚡ Agressivo'};
   var minPillars={1:5,2:4,3:3};
+  var descs={
+    1:'Exige 5+ pilares alinhados. Poucos sinais por semana, altíssima convicção. Ideal para quem opera com capital maior.',
+    2:'Exige 4+ pilares. Sinais diários, boa relação risco/retorno. Recomendado para a maioria dos operadores.',
+    3:'Exige 3+ pilares. Mais sinais, mais ruído. Requer acompanhamento constante e gestão rígida.'
+  };
   var el=document.getElementById('riskLabel');
   if(el)el.textContent=labels[val]||'Moderado';
+  var descEl=document.getElementById('riskDesc');
+  if(descEl)descEl.textContent=descs[val]||'';
   localStorage.setItem('risk_level',val);
   if(curProfile&&curUser&&sb){
     curProfile.risk_level=val;
@@ -2268,22 +2335,33 @@ function renderPerf(){
 
 function drawEvolution(ops){
   var canvas=document.getElementById('pChart');if(!canvas)return;
-  if(canvas.offsetWidth===0)return; // canvas não visível
+  if(canvas.offsetWidth===0)return;
   var ctx=canvas.getContext('2d');var dpr=window.devicePixelRatio||1;
-  canvas.width=canvas.offsetWidth*dpr;canvas.height=80*dpr;ctx.scale(dpr,dpr);
-  var w=canvas.offsetWidth,h=80;ctx.clearRect(0,0,w,h);
-  // Só trades com closePrice+entrada válidos
+  var H=120;
+  canvas.width=canvas.offsetWidth*dpr;canvas.height=H*dpr;ctx.scale(dpr,dpr);
+  var w=canvas.offsetWidth,h=H;ctx.clearRect(0,0,w,h);
   var closed=ops.filter(function(s){return s.status&&s.status!=='open'&&s.entrada>0&&s.closePrice>0});
-  if(closed.length<2){ctx.fillStyle='#3e4a60';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('Mínimo 2 trades válidos',w/2,h/2);return;}
+  if(closed.length<2){ctx.fillStyle='#3e4a60';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('Mínimo 2 trades para exibir',w/2,h/2);return;}
   var eq=[0];closed.slice().reverse().forEach(function(s){var last=eq[eq.length-1];var pct=(s.closePrice-s.entrada)/s.entrada*100;if(s.direcao==='SHORT')pct=-pct;eq.push(last+pct);});
-  var mn=Math.min.apply(null,eq),mx=Math.max.apply(null,eq),range=mx-mn||1,padY=8;
+  var mn=Math.min.apply(null,eq),mx=Math.max.apply(null,eq),range=mx-mn||1,padY=12;
   var pts=eq.map(function(v,i){return{x:i/(eq.length-1)*w,y:padY+(1-(v-mn)/range)*(h-padY*2)};});
   var isUp=eq[eq.length-1]>=0;
+  var lineCol=isUp?'#00E676':'#FF4757';
+  // Área preenchida com gradiente
   ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(function(p){ctx.lineTo(p.x,p.y)});ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();
-  var grd=ctx.createLinearGradient(0,0,0,h);grd.addColorStop(0,isUp?'rgba(0,230,118,0.15)':'rgba(255,71,87,0.15)');grd.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=grd;ctx.fill();
-  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(function(p){ctx.lineTo(p.x,p.y)});ctx.strokeStyle=isUp?'#00E676':'#FF4757';ctx.lineWidth=2;ctx.stroke();
-  var zeroY=padY+(1-(0-mn)/range)*(h-padY*2);ctx.beginPath();ctx.moveTo(0,zeroY);ctx.lineTo(w,zeroY);ctx.strokeStyle='#3e4a6044';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
-  var lp=pts[pts.length-1];ctx.beginPath();ctx.arc(lp.x,lp.y,3,0,Math.PI*2);ctx.fillStyle=isUp?'#00E676':'#FF4757';ctx.fill();
+  var grd=ctx.createLinearGradient(0,0,0,h);grd.addColorStop(0,isUp?'rgba(0,230,118,0.25)':'rgba(255,71,87,0.25)');grd.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=grd;ctx.fill();
+  // Linha principal mais espessa
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.forEach(function(p){ctx.lineTo(p.x,p.y)});ctx.strokeStyle=lineCol;ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.stroke();
+  // Linha zero tracejada
+  var zeroY=padY+(1-(0-mn)/range)*(h-padY*2);ctx.beginPath();ctx.moveTo(0,zeroY);ctx.lineTo(w,zeroY);ctx.strokeStyle='#3e4a6055';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
+  // Marcador no ponto final
+  var lp=pts[pts.length-1];ctx.beginPath();ctx.arc(lp.x,lp.y,4,0,Math.PI*2);ctx.fillStyle=lineCol;ctx.strokeStyle='var(--bg2)';ctx.lineWidth=2;ctx.fill();ctx.stroke();
+  // Marcadores nos trades (pontos pequenos)
+  pts.slice(1).forEach(function(p,i){
+    var prev=eq[i],cur=eq[i+1];
+    var dotCol=cur>=prev?'#00E67688':'#FF475788';
+    ctx.beginPath();ctx.arc(p.x,p.y,2,0,Math.PI*2);ctx.fillStyle=dotCol;ctx.fill();
+  });
 }
 
 function clearPerf(){showClearModal();}
@@ -2407,6 +2485,20 @@ function updateScanStatusPill(){
   }
 }
 
+function toggleAutoScanDash(dashBtn){
+  // Delega pro toggle principal em Monitor e sincroniza o visual do dash
+  var mainBtn=document.getElementById('tgAutoScan');
+  if(mainBtn)toggleAutoScan(mainBtn);
+  // Sincroniza visual do botão do dashboard após a lógica rodar
+  setTimeout(function(){
+    var db=document.getElementById('dashAutoScan');
+    if(db){if(autoScanOn)db.classList.add('on');else db.classList.remove('on');}
+  },100);
+}
+function syncDashToggle(){
+  var db=document.getElementById('dashAutoScan');
+  if(db){if(autoScanOn)db.classList.add('on');else db.classList.remove('on');}
+}
 function toggleAutoScan(btn){
   var novoEstado=!autoScanOn;
   // Optimistic UI: atualiza imediatamente
@@ -2461,8 +2553,7 @@ function startAutoScan(){
   var intLbl=intH<1?Math.round(intH*60)+' min':intH+'h';
   if(st)st.innerHTML='<span style="color:var(--grn)">● Ativo</span> — Worker scaneia a cada '+intLbl;
   autoLog('Auto-scan ativado — Worker respeita intervalo do plano ('+intLbl+')');
-  // Motor autoritativo = Worker (Cloudflare). Frontend apenas observa scan_status/progress
-  // via _refetchProfile. Não roda timer local pra evitar duplicação e respeitar scan_interval.
+  syncDashToggle();
 }
 
 function stopAutoScan(){
@@ -2471,6 +2562,7 @@ function stopAutoScan(){
   var st=document.getElementById('autoStatus');
   if(st){st.textContent='Desativado';st.style.color='var(--t3)';}
   autoLog('Auto-scan desativado');
+  syncDashToggle();
 }
 
 // ═══ FORÇA SCAN MANUAL (fallback) — analisa TODOS os pares monitorados agora ═══
@@ -2626,8 +2718,20 @@ function closeOnboarding(){
   var m=document.getElementById('onboardingModal');
   if(m)m.style.display='none';
   if(curUser)try{localStorage.setItem('spectra_onboard_'+curUser.id,'1');}catch(e){}
-  // Leva o user pra aba Alertas onde ele precisa marcar os pares
+  // Leva o user pra aba Monitor onde ele precisa marcar os pares e ligar o auto-scan
   try{goPage('alert',document.querySelector('.nav-item:nth-child(4)'));}catch(e){}
+  // Pulsa o botão AUTO-SCAN por 4s para guiar o olhar
+  setTimeout(function(){
+    var btn=document.getElementById('tgAutoScan');
+    if(!btn)return;
+    btn.style.transition='box-shadow .4s';
+    var pulses=0;
+    var iv=setInterval(function(){
+      pulses++;
+      btn.style.boxShadow=pulses%2===0?'0 0 0 4px var(--accg)':'none';
+      if(pulses>=8){clearInterval(iv);btn.style.boxShadow='none';}
+    },400);
+  },500);
 }
 
 // ── RESET ESTADO DE BOTÕES (corrige bug de "disabled em outro dispositivo") ──
